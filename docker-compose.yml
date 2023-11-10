@@ -1,4 +1,4 @@
-version: "1"
+version: "3"
 services:
   postgres:
     image: postgres:15-alpine
@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_USER=bekarys
       - POSTGRES_PASSWORD=mynewpassword
-      - POSTGRES_DB=janalyk_mobile
+      - POSTGRES_DB=secrets
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
     volumes:
@@ -20,27 +20,11 @@ services:
   server:
     build: .
     ports:
-      - 88:81
+      - 88:8888
     depends_on:
       - postgres
-      - redis
     links:
       - postgres
-      - redis
-    networks:
-      - base
-
-  redis:
-    image: redis:7.2.2-alpine
-    command: redis-server
-    restart: always
-    ports:
-      - 6379
-    environment:
-      - REDIS_ADDRESS=redis
-      - REDIS_PORT=6379
-    volumes:
-      - cache:/data
     networks:
       - base
 
