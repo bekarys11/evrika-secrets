@@ -1,7 +1,7 @@
 package main
 
-import "log"
+import "github.com/bekarys11/evrika-secrets/pkg/config"
 
 func main() {
-	log.Println("Evrika secrets")
+	config.StartApp()
 }
