@@ -5,6 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"log"
 	"net/http"
+	"os"
 )
 
 type Config struct {
@@ -13,13 +14,16 @@ type Config struct {
 }
 
 func StartApp() {
+	PORT := os.Getenv("APP_PORT")
 	app := Config{}
 
-	//if err := app.ConnectToDB(); err != nil {
-	//	log.Fatal(err)
-	//}
+	if err := app.ConnectToDB(); err != nil {
+		log.Fatal(err)
+	}
+	defer app.DB.Close()
+
 	app.LoadRoutes()
 	handler := handleCORS(app.Router)
 
-	log.Fatal(http.ListenAndServe(":8888", handler))
+	log.Fatal(http.ListenAndServe(PORT, handler))
 }
