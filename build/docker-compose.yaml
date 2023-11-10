@@ -1,0 +1,55 @@
+version: "1"
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    container_name: secrets_db
+    environment:
+      - POSTGRES_USER=bekarys
+      - POSTGRES_PASSWORD=mynewpassword
+      - POSTGRES_DB=janalyk_mobile
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5432
+    networks:
+      - base
+
+  server:
+    build: .
+    ports:
+      - 88:81
+    depends_on:
+      - postgres
+      - redis
+    links:
+      - postgres
+      - redis
+    networks:
+      - base
+
+  redis:
+    image: redis:7.2.2-alpine
+    command: redis-server
+    restart: always
+    ports:
+      - 6379
+    environment:
+      - REDIS_ADDRESS=redis
+      - REDIS_PORT=6379
+    volumes:
+      - cache:/data
+    networks:
+      - base
+
+# Networks to be created to facilitate communication between containers
+networks:
+  base:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  cache:
+
