@@ -8,7 +8,7 @@ import (
 )
 
 func (app *Config) ConnectToDB() (err error) {
-	dsn := fmt.Sprint("host=postgres port=5432 user=bekarys password=mynewpassword dbname=secrets sslmode=disable")
+	dsn := fmt.Sprint("host=localhost port=32781 user=bekarys password=mynewpassword dbname=secrets sslmode=disable")
 
 	app.DB, err = sqlx.Open("postgres", dsn)
 
