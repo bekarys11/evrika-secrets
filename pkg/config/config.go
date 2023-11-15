@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/go-ldap/ldap"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"log"
@@ -11,6 +12,7 @@ import (
 type Config struct {
 	DB     *sqlx.DB
 	Router *mux.Router
+	LDAP   *ldap.Conn
 }
 
 func StartApp() {
@@ -20,10 +22,16 @@ func StartApp() {
 	if err := app.ConnectToDB(); err != nil {
 		log.Fatal(err)
 	}
-	defer app.DB.Close()
+
+	if err := app.ConnectToLDAP(); err != nil {
+		log.Fatal(err)
+	}
 
 	app.LoadRoutes()
 	handler := handleCORS(app.Router)
+
+	defer app.DB.Close()
+	defer app.LDAP.Close()
 
 	log.Fatal(http.ListenAndServe(PORT, handler))
 }
