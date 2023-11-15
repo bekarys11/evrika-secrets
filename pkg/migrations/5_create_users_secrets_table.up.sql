@@ -1,4 +1,5 @@
 	CREATE TABLE IF NOT EXISTS users_secrets (
+        id SERIAL UNIQUE,
 	    user_id INT,
 	    secret_id INT,
 	    PRIMARY KEY (user_id, secret_id),
