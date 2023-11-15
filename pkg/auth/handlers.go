@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
@@ -98,6 +99,10 @@ func generateToken(user users.User) (string, error) {
 }
 
 func IsValidToken(tokenStr string) (bool, error) {
+	if tokenStr == "" {
+		return false, errors.New("token is not provided")
+	}
+
 	_, bareTokenStr, _ := strings.Cut(tokenStr, "Bearer ")
 
 	secretKey, err := generateSecretKey()
@@ -108,19 +113,17 @@ func IsValidToken(tokenStr string) (bool, error) {
 	}
 
 	token, err := jwt.Parse(bareTokenStr, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-
 		return secretKey, nil
 	})
 
 	if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return true, nil
 	} else {
-		fmt.Println(err)
-		return false, err
+
+		return false, fmt.Errorf("token is invalid: %v", err)
 	}
 
 }

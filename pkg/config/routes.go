@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
+	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/gorilla/mux"
 	"log/slog"
 	"net/http"
@@ -16,8 +17,8 @@ func (app *Config) LoadRoutes() {
 
 	app.Router = mux.NewRouter()
 	app.Post("/api/v1/login", app.HandleRequest(authRepo.Login))
-	app.Get("/api/v1/users", app.HandleRequest(userRepo.All))
-	app.Post("/api/v1/users", app.HandleRequest(userRepo.Create))
+	app.Get("/api/v1/users", app.HandleGuardedRequest(userRepo.All))
+	app.Post("/api/v1/users", app.HandleGuardedRequest(userRepo.Create))
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }
@@ -51,8 +52,8 @@ func (app *Config) HandleGuardedRequest(handler RequestHandlerFunction) http.Han
 		isValid, err := auth.IsValidToken(r.Header.Get("Authorization"))
 
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(fmt.Sprintf("Error with token validation: %v", err.Error())))
+			resp.ErrorJSON(w, fmt.Errorf("token error: %v", err), http.StatusUnauthorized)
+			return
 		}
 
 		if isValid {
