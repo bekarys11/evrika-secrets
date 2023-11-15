@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/bekarys11/evrika-secrets/internal/secrets"
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
@@ -14,11 +15,14 @@ import (
 func (app *Config) LoadRoutes() {
 	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP}
 	authRepo := &auth.Repo{DB: app.DB}
+	secretRepo := &secrets.Repo{DB: app.DB}
 
 	app.Router = mux.NewRouter()
 	app.Post("/api/v1/login", app.HandleRequest(authRepo.Login))
 	app.Get("/api/v1/users", app.HandleGuardedRequest(userRepo.All))
 	app.Post("/api/v1/users", app.HandleGuardedRequest(userRepo.Create))
+	app.Get("/api/v1/secrets/{user_id}", app.HandleGuardedRequest(secretRepo.All))
+	app.Post("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.Create))
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }
