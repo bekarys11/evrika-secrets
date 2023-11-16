@@ -18,8 +18,7 @@ type Repo struct {
 }
 
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var secrets []Secret
+	var secrets []*Secret
 	vars := mux.Vars(r)
 	userId, ok := vars["user_id"]
 	if !ok {
@@ -46,13 +45,12 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 			resp.ErrorJSON(w, err, http.StatusInternalServerError)
 			return
 		}
-		secrets = append(secrets, secret)
+		secrets = append(secrets, &secret)
 	}
-	resp.WriteJSON(w, http.StatusOK, resp.New{Data: secrets})
+	resp.WriteApiJSON(w, http.StatusOK, secrets)
 }
 
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	ctx := context.Background()
 	var (
 		secret   Secret
@@ -93,7 +91,6 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var usersSecrets UsersSecret
 
 	if err := json.NewDecoder(r.Body).Decode(&usersSecrets); err != nil {

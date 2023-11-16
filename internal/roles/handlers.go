@@ -11,8 +11,7 @@ type Repo struct {
 }
 
 func (rp *Repo) All(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var roles []Role
+	var roles []*Role
 
 	rows, err := rp.DB.Queryx("SELECT * FROM roles LIMIT 10")
 	if err != nil {
@@ -26,7 +25,8 @@ func (rp *Repo) All(w http.ResponseWriter, r *http.Request) {
 			resp.ErrorJSON(w, err, http.StatusInternalServerError)
 			return
 		}
-		roles = append(roles, role)
+		roles = append(roles, &role)
 	}
-	resp.WriteJSON(w, http.StatusOK, resp.New{Data: roles})
+
+	resp.WriteApiJSON(w, http.StatusOK, roles)
 }

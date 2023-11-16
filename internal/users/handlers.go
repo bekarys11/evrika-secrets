@@ -16,8 +16,7 @@ type Repo struct {
 }
 
 func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var users []User
+	var users []*User
 
 	rows, err := u.DB.Queryx("SELECT * FROM users LIMIT 10")
 
@@ -32,14 +31,13 @@ func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 			resp.ErrorJSON(w, err, http.StatusInternalServerError)
 			return
 		}
-		users = append(users, user)
+		users = append(users, &user)
 	}
 
-	resp.WriteJSON(w, http.StatusOK, resp.New{Data: users})
+	resp.WriteApiJSON(w, http.StatusOK, users)
 }
 
 func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	var user User
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {

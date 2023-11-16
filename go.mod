@@ -14,6 +14,7 @@ require (
 
 require (
 	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
+	github.com/google/jsonapi v1.0.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d // indirect
 )

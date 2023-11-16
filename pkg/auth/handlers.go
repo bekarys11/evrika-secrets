@@ -40,7 +40,6 @@ func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: fix check password
 	isValidPassword := checkPassword(userEntity.Password, loginPayload.Password)
 
 	if isValidPassword {
@@ -50,7 +49,6 @@ func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 
 		res := LoginResponse{AccessToken: token}
