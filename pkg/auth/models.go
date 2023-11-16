@@ -1,10 +1,10 @@
 package auth
 
 type LoginPayload struct {
-	Email    string `json:"email" validate:"required"`
+	Login    string `json:"login" validate:"required"`
 	Password []byte `json:"password" validate:"required"`
 }
 
 type LoginResponse struct {
-	AccessToken string `json:"token"`
+	AccessToken string `json:"access_token"`
 }

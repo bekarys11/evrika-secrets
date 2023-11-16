@@ -26,8 +26,9 @@ func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 
 	//TODO: fix: if add error handling, returns error: "json illegal base64 data at input byte 4"
 	json.NewDecoder(r.Body).Decode(&loginPayload)
+	email := fmt.Sprintf("%s@evrika.com", loginPayload.Login)
 
-	row := a.DB.QueryRowx("SELECT * FROM users WHERE email = $1", loginPayload.Email)
+	row := a.DB.QueryRowx("SELECT * FROM users WHERE email = $1", email)
 
 	if row.Err() != nil {
 		resp.ErrorJSON(w, row.Err(), http.StatusInternalServerError)
