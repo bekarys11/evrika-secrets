@@ -2,12 +2,17 @@ package users
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/go-ldap/ldap"
+	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type Repo struct {
@@ -62,4 +67,45 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
+	var user User
+	claims, err := getTokenClaims(r)
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("get profile error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	userId, ok := claims["user_id"]
+	if !ok {
+		resp.ErrorJSON(w, errors.New("there is no user id in token claims"), http.StatusInternalServerError)
+		return
+	}
+	log.Println(userId)
+	if err = u.DB.QueryRowx("SELECT * FROM users WHERE id = $1", userId).StructScan(&user); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("db scan error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	resp.WriteApiJSON(w, http.StatusOK, &user)
+}
+
+func getTokenClaims(r *http.Request) (jwt.MapClaims, error) {
+	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+
+	_, tokenStr, _ := strings.Cut(r.Header.Get("Authorization"), "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secretKey, nil
+	})
+	if err != nil {
+		return nil, err
+	} else if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		return claims, nil
+	} else {
+		return nil, errors.New("unknown claims type, cannot proceed")
+	}
 }

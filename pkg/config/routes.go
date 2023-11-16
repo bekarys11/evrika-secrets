@@ -21,11 +21,16 @@ func (app *Config) LoadRoutes() {
 
 	app.Router = mux.NewRouter()
 	app.Post("/api/v1/login", app.HandleRequest(authRepo.Login))
+
 	app.Get("/api/v1/users", app.HandleGuardedRequest(userRepo.All))
 	app.Post("/api/v1/users", app.HandleGuardedRequest(userRepo.Create))
+
+	app.Get("/api/v1/profile", app.HandleGuardedRequest(userRepo.GetProfile))
+
 	app.Get("/api/v1/secrets/{user_id}", app.HandleGuardedRequest(secretRepo.All))
 	app.Post("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.Create))
 	app.Post("/api/v1/secrets/share", app.HandleGuardedRequest(secretRepo.ShareSecret))
+
 	app.Get("/api/v1/roles", app.HandleGuardedRequest(roleRepo.All))
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
