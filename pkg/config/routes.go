@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/bekarys11/evrika-secrets/internal/roles"
 	"github.com/bekarys11/evrika-secrets/internal/secrets"
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
@@ -16,6 +17,7 @@ func (app *Config) LoadRoutes() {
 	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP}
 	authRepo := &auth.Repo{DB: app.DB}
 	secretRepo := &secrets.Repo{DB: app.DB}
+	roleRepo := &roles.Repo{DB: app.DB}
 
 	app.Router = mux.NewRouter()
 	app.Post("/api/v1/login", app.HandleRequest(authRepo.Login))
@@ -24,6 +26,7 @@ func (app *Config) LoadRoutes() {
 	app.Get("/api/v1/secrets/{user_id}", app.HandleGuardedRequest(secretRepo.All))
 	app.Post("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.Create))
 	app.Post("/api/v1/secrets/share", app.HandleGuardedRequest(secretRepo.ShareSecret))
+	app.Get("/api/v1/roles", app.HandleGuardedRequest(roleRepo.All))
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }
