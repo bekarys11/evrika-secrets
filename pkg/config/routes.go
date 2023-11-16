@@ -23,6 +23,7 @@ func (app *Config) LoadRoutes() {
 	app.Post("/api/v1/users", app.HandleGuardedRequest(userRepo.Create))
 	app.Get("/api/v1/secrets/{user_id}", app.HandleGuardedRequest(secretRepo.All))
 	app.Post("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.Create))
+	app.Post("/api/v1/secrets/share", app.HandleGuardedRequest(secretRepo.ShareSecret))
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }

@@ -9,7 +9,7 @@ import (
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	"log"
+	"github.com/lib/pq"
 	"net/http"
 )
 
@@ -48,9 +48,7 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 		}
 		secrets = append(secrets, secret)
 	}
-
 	resp.WriteJSON(w, http.StatusOK, resp.New{Data: secrets})
-
 }
 
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
@@ -77,8 +75,6 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		resp.ErrorJSON(w, fmt.Errorf("no secret with id: %v", err), http.StatusInternalServerError)
 	case err != nil:
 		resp.ErrorJSON(w, fmt.Errorf("error insert secrets to db: %v", err), http.StatusInternalServerError)
-	default:
-		log.Printf("INSERTED INTO secrets")
 	}
 
 	if _, err = tx.ExecContext(ctx, `INSERT INTO users_secrets (user_id, secret_id) VALUES ($1, $2)`, secret.AuthorId, secretId); err != nil {
@@ -88,6 +84,44 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 
 	if err = tx.Commit(); err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("error committing db transaction: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var usersSecrets UsersSecret
+
+	if err := json.NewDecoder(r.Body).Decode(&usersSecrets); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	txn, err := s.DB.Beginx()
+
+	stmt, err := txn.Preparex(pq.CopyIn("users_secrets", "user_id", "secret_id"))
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("error preparing users' secrets transaction: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	for _, v := range usersSecrets.UserIds {
+		if _, err = stmt.Exec(v, usersSecrets.SecretId); err != nil {
+			resp.ErrorJSON(w, fmt.Errorf("error executing users' secrets transaction: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("error execute users' secrets transaction: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err = txn.Commit(); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("error commiting users' secrets transaction: %v", err), http.StatusInternalServerError)
 		return
 	}
 
