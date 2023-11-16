@@ -8,6 +8,7 @@ type User struct {
 	Email     string    `json:"email" validate:"required,email"`
 	Password  string    `json:"-" validate:"required"`
 	IsActive  bool      `json:"is_active" db:"is_active"`
+	RoleId    int       `json:"role_id" db:"role_id"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }

@@ -58,7 +58,7 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		resp.ErrorJSON(w, fmt.Errorf("password hashing error: %v", err.Error()), http.StatusInternalServerError)
 	}
 
-	if _, err = u.DB.Exec(`INSERT INTO users (name, email, password, is_active ) VALUES ($1, $2, $3, $4)`, user.Name, user.Email, string(hashed), user.IsActive); err != nil {
+	if _, err = u.DB.Exec(`INSERT INTO users (name, email, password, is_active, role_id ) VALUES ($1, $2, $3, $4, $5)`, user.Name, user.Email, string(hashed), user.IsActive, user.RoleId); err != nil {
 		resp.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}

@@ -73,8 +73,10 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err == sql.ErrNoRows:
 		resp.ErrorJSON(w, fmt.Errorf("no secret with id: %v", err), http.StatusInternalServerError)
+		return
 	case err != nil:
 		resp.ErrorJSON(w, fmt.Errorf("error insert secrets to db: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	if _, err = tx.ExecContext(ctx, `INSERT INTO users_secrets (user_id, secret_id) VALUES ($1, $2)`, secret.AuthorId, secretId); err != nil {
