@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bekarys11/evrika-secrets/internal/roles"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/go-ldap/ldap"
 	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -21,23 +21,34 @@ type Repo struct {
 }
 
 func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
-	var users []*User
+	var users []*UserResp
 
-	rows, err := u.DB.Queryx("SELECT * FROM users LIMIT 10")
-
+	rows, err := u.DB.Queryx(`SELECT * FROM users
+         							JOIN roles as r ON role_id = r.id
+         							LIMIT 10`)
 	if err != nil {
 		resp.ErrorJSON(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	for rows.Next() {
-		var user User
-		if err := rows.StructScan(&user); err != nil {
+		var (
+			user UserResp
+			role roles.Role
+		)
+		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.IsActive, &user.RoleId, &user.CreatedAt, &user.UpdatedAt, &role.ID, &role.Name, &role.Alias, &role.CreatedAt, &role.UpdatedAt); err != nil {
 			resp.ErrorJSON(w, err, http.StatusInternalServerError)
 			return
 		}
+
+		if role.ID != 0 {
+			user.Role = &role
+		}
+
 		users = append(users, &user)
+
 	}
+	defer rows.Close()
 
 	resp.WriteApiJSON(w, http.StatusOK, users)
 }
@@ -82,7 +93,7 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 		resp.ErrorJSON(w, errors.New("there is no user id in token claims"), http.StatusInternalServerError)
 		return
 	}
-	log.Println(userId)
+
 	if err = u.DB.QueryRowx("SELECT * FROM users WHERE id = $1", userId).StructScan(&user); err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("db scan error: %v", err), http.StatusInternalServerError)
 		return
