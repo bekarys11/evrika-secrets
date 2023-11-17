@@ -81,7 +81,10 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
-	var user User
+	var (
+		user UserResp
+		role roles.Role
+	)
 	claims, err := getTokenClaims(r)
 	if err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("get profile error: %v", err), http.StatusInternalServerError)
@@ -94,10 +97,14 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = u.DB.QueryRowx("SELECT * FROM users WHERE id = $1", userId).StructScan(&user); err != nil {
+	if err = u.DB.QueryRowx(`SELECT * FROM users as u
+    						JOIN roles as r ON role_id = r.id 
+         					WHERE u.id = $1`, userId).Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.IsActive, &user.RoleId, &user.CreatedAt, &user.UpdatedAt, &role.ID, &role.Name, &role.Alias, &role.CreatedAt, &role.UpdatedAt); err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("db scan error: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	user.Role = &role
 
 	resp.WriteApiJSON(w, http.StatusOK, &user)
 }
