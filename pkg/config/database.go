@@ -5,10 +5,11 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log/slog"
+	"os"
 )
 
 func (app *Config) ConnectToDB() (err error) {
-	dsn := fmt.Sprint("host=localhost port=32781 user=bekarys password=mynewpassword dbname=secrets sslmode=disable")
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", os.Getenv("POSTGRES_HOST"), os.Getenv("POSTGRES_PORT"), os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"))
 
 	app.DB, err = sqlx.Open("postgres", dsn)
 
