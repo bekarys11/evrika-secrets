@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
+	"os"
 )
 
 func PopulateRoles(db *sqlx.DB) error {
@@ -19,14 +20,17 @@ func PopulateRoles(db *sqlx.DB) error {
 }
 
 func PopulateUsers(db *sqlx.DB) error {
-	hashed, err := bcrypt.GenerateFromPassword([]byte("12345678"), bcrypt.DefaultCost)
-
-	db.Exec(`
-		INSERT INTO users (name, email, password, is_active, role_id) 
-		VALUES ('bekarys', 'bekarys.t@evrika.com', $1, true, 1)
-		ON CONFLICT DO NOTHING`, string(hashed))
+	hashed, err := bcrypt.GenerateFromPassword([]byte(os.Getenv("USER_PASSWORD")), bcrypt.DefaultCost)
 	if err != nil {
-		return fmt.Errorf("error creating users: %v", err.Error())
+		return fmt.Errorf("error generating password for user: %v", err.Error())
+	}
+
+	_, err = db.Exec(`
+		INSERT INTO users (name, email, password, is_active, role_id) 
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT DO NOTHING`, "bekarys", "bekarys.t@evrika.com", string(hashed), true, 1)
+	if err != nil {
+		return fmt.Errorf("error creating user: %v", err.Error())
 	}
 
 	return nil
