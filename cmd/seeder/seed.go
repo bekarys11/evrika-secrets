@@ -9,7 +9,8 @@ import (
 func PopulateRoles(db *sqlx.DB) error {
 	_, err := db.Exec(`
 	INSERT INTO roles (name, alias) 
-	VALUES ('Админ', 'admin'), ('Пользователь', 'user');
+	VALUES ('Админ', 'admin'), ('Пользователь', 'user')
+	ON CONFLICT DO NOTHING;
 `)
 	if err != nil {
 		return fmt.Errorf("error inserting roles into database: %v", err)
@@ -22,8 +23,8 @@ func PopulateUsers(db *sqlx.DB) error {
 
 	db.Exec(`
 		INSERT INTO users (name, email, password, is_active, role_id) 
-		VALUES ('bekarys', 'bekarys.t@evrika.com', $1, true, 1);
-`, hashed)
+		VALUES ('bekarys', 'bekarys.t@evrika.com', $1, true, 1)
+		ON CONFLICT DO NOTHING`, hashed)
 	if err != nil {
 		return fmt.Errorf("error creating users: %v", err.Error())
 	}
