@@ -24,7 +24,7 @@ func PopulateUsers(db *sqlx.DB) error {
 	db.Exec(`
 		INSERT INTO users (name, email, password, is_active, role_id) 
 		VALUES ('bekarys', 'bekarys.t@evrika.com', $1, true, 1)
-		ON CONFLICT DO NOTHING`, hashed)
+		ON CONFLICT DO NOTHING`, string(hashed))
 	if err != nil {
 		return fmt.Errorf("error creating users: %v", err.Error())
 	}
