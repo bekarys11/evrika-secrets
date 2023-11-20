@@ -9,20 +9,9 @@ import (
 	"net/http"
 )
 
-type New struct {
-	Data any `json:"data"`
-}
-
 type Err struct {
 	Message string `json:"message"`
 }
-
-//type Data struct {
-//	ID         int    `json:"id,omitempty"`
-//	Type       string `json:"type,omitempty"`
-//	Attributes any    `json:"attributes"`
-//	Included   any    `json:"included"`
-//}
 
 func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) {
 	out, err := json.Marshal(data)
