@@ -8,9 +8,9 @@ import (
 )
 
 func PopulateRoles(db *sqlx.DB) error {
-	if _, err := db.Exec("TRUNCATE roles RESTART IDENTITY CASCADE ;"); err == nil {
-		return fmt.Errorf("error truncating roles table: %v", err)
-	}
+	//if _, err := db.Exec("TRUNCATE roles RESTART IDENTITY CASCADE;"); err == nil {
+	//	return fmt.Errorf("error truncating roles table: %v", err)
+	//}
 
 	_, err := db.Exec(`
 	INSERT INTO roles (name, alias) 
@@ -29,9 +29,9 @@ func PopulateUsers(db *sqlx.DB) error {
 		return fmt.Errorf("error generating password for user: %v", err.Error())
 	}
 
-	if _, err := db.Exec("TRUNCATE users RESTART IDENTITY CASCADE ;"); err == nil {
-		return fmt.Errorf("error truncating roles table: %v", err)
-	}
+	//if _, err := db.Exec("TRUNCATE users RESTART IDENTITY CASCADE ;"); err == nil {
+	//	return fmt.Errorf("error truncating roles table: %v", err)
+	//}
 
 	_, err = db.Exec(`
 		INSERT INTO users (name, email, password, is_active, role_id) 
