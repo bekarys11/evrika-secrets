@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"os"
 )
 
 func PopulateRoles(db *sqlx.DB) error {
-	//if _, err := db.Exec("TRUNCATE TABLE roles RESTART IDENTITY;"); err == nil {
-	//	return fmt.Errorf("error truncating roles table: %v", err)
-	//}
+	if _, err := db.Exec("TRUNCATE roles RESTART IDENTITY CASCADE ;"); err == nil {
+		return fmt.Errorf("error truncating roles table: %v", err)
+	}
 
 	_, err := db.Exec(`
 	INSERT INTO roles (name, alias) 
@@ -25,15 +24,14 @@ func PopulateRoles(db *sqlx.DB) error {
 }
 
 func PopulateUsers(db *sqlx.DB) error {
-	log.Println(os.Getenv("USER_PASSWORD"))
 	hashed, err := bcrypt.GenerateFromPassword([]byte(os.Getenv("USER_PASSWORD")), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error generating password for user: %v", err.Error())
 	}
 
-	//if _, err := db.Exec("TRUNCATE TABLE users RESTART IDENTITY;"); err == nil {
-	//	return fmt.Errorf("error truncating roles table: %v", err)
-	//}
+	if _, err := db.Exec("TRUNCATE users RESTART IDENTITY CASCADE ;"); err == nil {
+		return fmt.Errorf("error truncating roles table: %v", err)
+	}
 
 	_, err = db.Exec(`
 		INSERT INTO users (name, email, password, is_active, role_id) 
