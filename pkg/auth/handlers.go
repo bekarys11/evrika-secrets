@@ -65,8 +65,9 @@ func generateSecretKey() ([]byte, error) {
 	return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 }
 
-func checkPassword(hashedPassword string, providedPassword []byte) bool {
-	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), providedPassword); err != nil {
+func checkPassword(hashedPassword, providedPassword string) bool {
+	fmt.Printf("checkPassword func: hashedPassword=%s \n provided password=%s \n", hashedPassword, providedPassword)
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(providedPassword)); err != nil {
 		slog.Error(err.Error())
 		return false
 	}

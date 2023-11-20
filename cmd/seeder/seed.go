@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"os"
 )
 
@@ -24,6 +25,7 @@ func PopulateRoles(db *sqlx.DB) error {
 }
 
 func PopulateUsers(db *sqlx.DB) error {
+	log.Printf("seed: user password=%s", os.Getenv("USER_PASSWORD"))
 	hashed, err := bcrypt.GenerateFromPassword([]byte(os.Getenv("USER_PASSWORD")), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("error generating password for user: %v", err.Error())
