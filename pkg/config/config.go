@@ -1,6 +1,7 @@
 package config
 
 import (
+	seed "github.com/bekarys11/evrika-secrets/cmd/seeder"
 	"github.com/go-ldap/ldap"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -20,6 +21,14 @@ func StartApp() {
 	app := Config{}
 
 	if err := app.ConnectToDB(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := seed.PopulateRoles(app.DB); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := seed.PopulateUsers(app.DB); err != nil {
 		log.Fatal(err)
 	}
 
