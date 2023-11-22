@@ -7,6 +7,7 @@ import (
 	"github.com/bekarys11/evrika-secrets/internal/roles"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/go-ldap/ldap"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
@@ -16,8 +17,9 @@ import (
 )
 
 type Repo struct {
-	DB   *sqlx.DB
-	LDAP *ldap.Conn
+	DB         *sqlx.DB
+	LDAP       *ldap.Conn
+	Validation *validator.Validate
 }
 
 func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
@@ -54,15 +56,19 @@ func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
-	var user User
+	var user UserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	_, err := u.ActiveDirSearch(user.Email)
-	if err != nil {
+	if err := u.Validation.Struct(user); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("validation error: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if _, err := u.ActiveDirSearch(user.Email); err != nil {
 		resp.ErrorJSON(w, err, http.StatusBadRequest)
 		return
 	}
@@ -77,7 +83,7 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	resp.WriteApiJSON(w, 201, "Пользователь создан")
 }
 
 func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,7 @@ import (
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"log/slog"
 	"net/http"
@@ -14,7 +15,9 @@ import (
 )
 
 func (app *Config) LoadRoutes() {
-	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP}
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP, Validation: validate}
 	authRepo := &auth.Repo{DB: app.DB}
 	secretRepo := &secrets.Repo{DB: app.DB}
 	roleRepo := &roles.Repo{DB: app.DB}

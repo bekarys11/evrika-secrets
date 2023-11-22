@@ -50,11 +50,9 @@ func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-
 		res := LoginResponse{AccessToken: token}
 
-		json.NewEncoder(w).Encode(res)
+		resp.WriteJSON(w, 200, res)
 	} else {
 		resp.ErrorJSON(w, fmt.Errorf("invalid password"), http.StatusBadRequest)
 	}
