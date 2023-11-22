@@ -17,6 +17,19 @@ type Repo struct {
 	DB *sqlx.DB
 }
 
+//	 @Summary      Список секретов/ключей
+//		@Security ApiKeyAuth
+//	 @Description  Получить список всех секретов
+//	 @Tags         secrets
+//	 @Accept       json
+//	 @Produce      json
+//
+// @Param user_id  path int true "ID пользователя"
+//
+//	@Success      200  {object} SecretSwaggerJson
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/secrets/:user_id [get]
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 	var secrets []*Secret
 	vars := mux.Vars(r)
@@ -50,6 +63,19 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 	resp.WriteApiJSON(w, http.StatusOK, secrets)
 }
 
+//	 @Summary      Создать секрет/ключ
+//		@Security ApiKeyAuth
+//	 @Description  Создать секрет/ключ
+//	 @Tags         secrets
+//
+// @Param input body SecretSwaggerReq true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      201  {string}   "Секрет сохранен"
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/secrets [post]
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	var (
@@ -87,9 +113,22 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	resp.WriteJSON(w, 201, "Секрет сохранен")
 }
 
+//	 @Summary      Поделиться секретом с пользователями
+//		@Security ApiKeyAuth
+//	 @Description  Поделиться секретом с пользователями
+//	 @Tags         secrets
+//
+// @Param input body UsersSecret true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      201  {string}   "Секрет сохранен"
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/secrets/share [post]
 func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 	var usersSecrets UsersSecret
 
@@ -124,5 +163,5 @@ func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	resp.WriteJSON(w, 201, "Секрет сохранен")
 }

@@ -21,6 +21,18 @@ type Repo struct {
 	DB *sqlx.DB
 }
 
+//	@Summary      Вход пользователя
+//	@Description  Логин пользователя
+//	@Tags         auth
+//
+// @Param input body LoginPayload true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {object}   LoginResponse
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/login [post]
 func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 	var loginPayload LoginPayload
 

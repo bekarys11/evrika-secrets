@@ -23,3 +23,7 @@ start:
 	@echo "Starting server"
 	go run cmd/api/main.go
 
+swagger:
+	@echo "Generating swagger documentation"
+	swag init -g pkg/config/routes.go
+	@echo "Swagger documentation is available at: http://localhost:8888/swagger/index.html"

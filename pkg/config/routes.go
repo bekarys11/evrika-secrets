@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	_ "github.com/bekarys11/evrika-secrets/docs"
 	"github.com/bekarys11/evrika-secrets/internal/roles"
 	"github.com/bekarys11/evrika-secrets/internal/secrets"
 	"github.com/bekarys11/evrika-secrets/internal/users"
@@ -9,11 +10,22 @@ import (
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log/slog"
 	"net/http"
 	"os"
 )
 
+// @title           Evrika Secrets API
+// @version         1.0
+// @description     Platform for managing application secrets and keys.
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+// @host      localhost:8888
+// @BasePath  /api/v1
+// @securityDefinitions.apiKey  ApiKeyAuth
+// @in header
+// @name Authorization
 func (app *Config) LoadRoutes() {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
@@ -35,6 +47,8 @@ func (app *Config) LoadRoutes() {
 	app.Post("/api/v1/secrets/share", app.HandleGuardedRequest(secretRepo.ShareSecret))
 
 	app.Get("/api/v1/roles", app.HandleGuardedRequest(roleRepo.All))
+
+	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL("http://localhost:8888/swagger/doc.json"))).Methods("GET")
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }

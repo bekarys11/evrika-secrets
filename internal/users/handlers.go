@@ -22,6 +22,16 @@ type Repo struct {
 	Validation *validator.Validate
 }
 
+//	 @Summary      Список пользователей
+//		@Security ApiKeyAuth
+//	 @Description  Получить список всех пользователей
+//	 @Tags         users
+//	 @Accept       json
+//	 @Produce      json
+//	 @Success      200  {object}   UserSwaggerJson
+//	 @Failure      400  {object}  resp.Err
+//	 @Failure      500  {object}  resp.Err
+//	 @Router       /api/v1/users [get]
 func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 	var users []*UserResp
 
@@ -55,6 +65,19 @@ func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 	resp.WriteApiJSON(w, http.StatusOK, users)
 }
 
+//	 @Summary      Создать пользователя
+//		@Security ApiKeyAuth
+//	 @Description  Создать пользователя
+//	 @Tags         users
+//
+// @Param input body UserSwaggerRequest true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      201  {string}   "Пользователь создан"
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/users [post]
 func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	var user UserRequest
 
@@ -86,6 +109,17 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	resp.WriteApiJSON(w, 201, "Пользователь создан")
 }
 
+//	 @Summary      Инфо о профиле
+//		@Security ApiKeyAuth
+//	 @Description  Получить инфо о пользователе
+//	 @Tags         users
+//
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}   UserSwaggerJsonMap
+// @Failure      400  {object}  resp.Err
+// @Failure      500  {object}  resp.Err
+// @Router       /api/v1/profile [get]
 func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 	var (
 		user UserResp

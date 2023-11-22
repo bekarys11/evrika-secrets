@@ -10,6 +10,16 @@ type Repo struct {
 	DB *sqlx.DB
 }
 
+//	 @Summary      Список ролей
+//		@Security ApiKeyAuth
+//	 @Description  Получить список всех ролей
+//	 @Tags         roles
+//	 @Accept       json
+//	 @Produce      json
+//	 @Success      200  {object}   RoleSwaggerJson
+//	 @Failure      400  {object}  resp.Err
+//	 @Failure      500  {object}  resp.Err
+//	 @Router       /api/v1/roles [get]
 func (rp *Repo) All(w http.ResponseWriter, r *http.Request) {
 	var roles []*Role
 

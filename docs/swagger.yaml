@@ -1,0 +1,468 @@
+basePath: /api/v1
+definitions:
+  auth.LoginPayload:
+    properties:
+      login:
+        example: kamilla.n
+        type: string
+      password:
+        example: password123
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  auth.LoginResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDA3OTgzMzcsIm5hbWUiOiJiZWthcnlzIiwidXNlcl9pZCI6MX0.YoLwVoMnGvA7q44dFQJ4E4qBghr3zYDKbJNrhV1yrC0
+        type: string
+    type: object
+  resp.Err:
+    properties:
+      message:
+        example: internal server error
+        type: string
+    type: object
+  roles.Role:
+    properties:
+      alias:
+        example: user
+        type: string
+      created_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+      id:
+        example: 12
+        type: integer
+      name:
+        example: Пользователь
+        type: string
+      updated_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+    type: object
+  roles.RoleSwaggerData:
+    properties:
+      attributes:
+        $ref: '#/definitions/roles.Role'
+      id:
+        example: "11"
+        type: string
+      type:
+        example: users
+        type: string
+    type: object
+  roles.RoleSwaggerJson:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/roles.RoleSwaggerData'
+        type: array
+    type: object
+  secrets.Secret:
+    properties:
+      author_id:
+        example: 1
+        type: integer
+      created_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+      data:
+        example: localhost:5432
+        type: string
+      id:
+        example: 11
+        type: integer
+      key:
+        example: dbHost
+        type: string
+      title:
+        example: адрес базы данных
+        type: string
+      updated_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+    required:
+    - author_id
+    - data
+    - key
+    - title
+    type: object
+  secrets.SecretSwaggerData:
+    properties:
+      attributes:
+        $ref: '#/definitions/secrets.Secret'
+      id:
+        example: "11"
+        type: string
+      type:
+        example: secrets
+        type: string
+    type: object
+  secrets.SecretSwaggerJson:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/secrets.SecretSwaggerData'
+        type: array
+    type: object
+  secrets.SecretSwaggerReq:
+    properties:
+      author_id:
+        example: 1
+        type: integer
+      data:
+        example: localhost:5432
+        type: string
+      key:
+        example: dbHost
+        type: string
+      title:
+        example: адрес базы данных
+        type: string
+    required:
+    - author_id
+    - data
+    - key
+    - title
+    type: object
+  secrets.UsersSecret:
+    properties:
+      secret_id:
+        example: 41
+        type: integer
+      user_ids:
+        example:
+        - 13
+        items:
+          type: integer
+        type: array
+    type: object
+  users.UserResp:
+    properties:
+      created_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+      email:
+        example: bekarys.t@evrika.com
+        type: string
+      id:
+        example: 32
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: bekarys
+        type: string
+      role:
+        $ref: '#/definitions/roles.Role'
+      role_id:
+        example: 2
+        type: integer
+      updated_at:
+        example: "2023-11-20T11:15:37Z"
+        type: string
+    required:
+    - email
+    - name
+    type: object
+  users.UserSwaggerData:
+    properties:
+      attributes:
+        $ref: '#/definitions/users.UserResp'
+      id:
+        example: "11"
+        type: string
+      type:
+        example: users
+        type: string
+    type: object
+  users.UserSwaggerJson:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/users.UserSwaggerData'
+        type: array
+    type: object
+  users.UserSwaggerJsonMap:
+    properties:
+      data:
+        $ref: '#/definitions/users.UserSwaggerData'
+    type: object
+  users.UserSwaggerRequest:
+    properties:
+      email:
+        example: yelena.a@evrika.com
+        type: string
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: yelena.a
+        type: string
+      password:
+        example: password123
+        maxLength: 20
+        minLength: 7
+        type: string
+      role_id:
+        enum:
+        - 1
+        - 2
+        example: 1
+        type: integer
+    required:
+    - email
+    - name
+    - password
+    - role_id
+    type: object
+host: localhost:8888
+info:
+  contact: {}
+  description: Platform for managing application secrets and environment variables.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Evrika Secrets API
+  version: "1.0"
+paths:
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: Логин пользователя
+      parameters:
+      - description: добавить данные в тело запроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/auth.LoginPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      summary: Вход пользователя
+      tags:
+      - auth
+  /api/v1/profile:
+    get:
+      consumes:
+      - application/json
+      description: Получить инфо о пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserSwaggerJsonMap'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Инфо о профиле
+      tags:
+      - users
+  /api/v1/roles:
+    get:
+      consumes:
+      - application/json
+      description: Получить список всех ролей
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/roles.RoleSwaggerJson'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Список ролей
+      tags:
+      - roles
+  /api/v1/secrets:
+    post:
+      consumes:
+      - application/json
+      description: Создать секрет/ключ
+      parameters:
+      - description: добавить данные в тело запроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/secrets.SecretSwaggerReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Секрет сохранен
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Создать секрет/ключ
+      tags:
+      - secrets
+  /api/v1/secrets/:user_id:
+    get:
+      consumes:
+      - application/json
+      description: Получить список всех секретов
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secrets.SecretSwaggerJson'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Список секретов/ключей
+      tags:
+      - secrets
+  /api/v1/secrets/share:
+    post:
+      consumes:
+      - application/json
+      description: Поделиться секретом с пользователями
+      parameters:
+      - description: добавить данные в тело запроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/secrets.UsersSecret'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Секрет сохранен
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Поделиться секретом с пользователями
+      tags:
+      - secrets
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Получить список всех пользователей
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.UserSwaggerJson'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Список пользователей
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Создать пользователя
+      parameters:
+      - description: добавить данные в тело запроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserSwaggerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь создан
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Создать пользователя
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
