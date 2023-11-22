@@ -21,7 +21,7 @@ import (
 // @description     Platform for managing application secrets and keys.
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-// @host      localhost:8888
+// @host      10.10.1.59:44044
 // @BasePath  /api/v1
 // @securityDefinitions.apiKey  ApiKeyAuth
 // @in header
@@ -48,7 +48,7 @@ func (app *Config) LoadRoutes() {
 
 	app.Get("/api/v1/roles", app.HandleGuardedRequest(roleRepo.All))
 
-	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL("http://localhost:8888/swagger/doc.json"))).Methods("GET")
+	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL("http://10.10.1.59:44044/swagger/doc.json"))).Methods("GET")
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }
