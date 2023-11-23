@@ -13,10 +13,6 @@ type Err struct {
 	Message string `json:"message" example:"internal server error"`
 }
 
-type JsonApiResponse struct {
-	Data []any
-}
-
 func WriteJSON(w http.ResponseWriter, status int, data any, headers ...http.Header) {
 	out, err := json.Marshal(data)
 

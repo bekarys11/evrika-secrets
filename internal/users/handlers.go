@@ -1,7 +1,6 @@
 package users
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/roles"
@@ -81,7 +80,7 @@ func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	var user UserRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	if err := resp.ReadJSON(w, r, &user); err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err), http.StatusBadRequest)
 		return
 	}

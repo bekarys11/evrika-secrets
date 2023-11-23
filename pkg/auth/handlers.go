@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/users"
@@ -37,7 +36,10 @@ func (a *Repo) Login(w http.ResponseWriter, r *http.Request) {
 	var loginPayload LoginPayload
 
 	//TODO: fix: if add error handling, returns error: "json illegal base64 data at input byte 4"
-	json.NewDecoder(r.Body).Decode(&loginPayload)
+	if err := resp.ReadJSON(w, r, &loginPayload); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err), http.StatusBadRequest)
+		return
+	}
 	email := fmt.Sprintf("%s@evrika.com", loginPayload.Login)
 
 	row := a.DB.QueryRowx("SELECT * FROM users WHERE email = $1", email)
