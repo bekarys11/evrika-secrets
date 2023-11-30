@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bekarys11/evrika-secrets/internal/users"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
-	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"net/http"
@@ -24,28 +24,49 @@ type Repo struct {
 //	 @Accept       json
 //	 @Produce      json
 //
-// @Param user_id  path int true "ID пользователя"
-//
-//	@Success      200  {object} SecretSwaggerJson
-//	@Failure      400  {object}  resp.Err
-//	@Failure      500  {object}  resp.Err
-//	@Router       /api/v1/secrets/:user_id [get]
+// @Success      200  {object} SecretSwaggerJson
+// @Failure      400  {object}  resp.Err
+// @Failure      500  {object}  resp.Err
+// @Router       /api/v1/secrets [get]
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
-	var secrets []*Secret
-	vars := mux.Vars(r)
-	userId, ok := vars["user_id"]
+	var (
+		secrets []*Secret
+		//query   string
+		rows *sqlx.Rows
+		err  error
+	)
+
+	claims, err := users.GetTokenClaims(r)
+	userId, ok := claims["user_id"]
 	if !ok {
 		resp.ErrorJSON(w, errors.New("user id is not provided"), http.StatusBadRequest)
 		return
 	}
-
-	rows, err := s.DB.Queryx(`
+	userRole := claims["role"]
+	if userRole == "admin" {
+		rows, err = s.DB.Queryx(`
+		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
+		FROM users_secrets
+        JOIN secrets ON users_secrets.secret_id = secrets.id
+		LIMIT 10;
+`)
+	} else {
+		rows, err = s.DB.Queryx(`
 		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
 		FROM users_secrets
         JOIN secrets ON users_secrets.secret_id = secrets.id
 		WHERE users_secrets.user_id = $1
 		LIMIT 10;
 `, userId)
+	}
+
+	//	rows, err := s.DB.Queryx(`
+	//		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
+	//		FROM users_secrets
+	//        JOIN secrets ON users_secrets.secret_id = secrets.id
+	//		WHERE users_secrets.user_id = $1
+	//		LIMIT 10;
+	//`, userId)
 
 	if err != nil {
 		resp.ErrorJSON(w, err, http.StatusInternalServerError)

@@ -51,7 +51,7 @@ func (app *Config) LoadRoutes() {
 
 	app.Get("/api/v1/profile", app.HandleGuardedRequest(userRepo.GetProfile))
 
-	app.Get("/api/v1/secrets/{user_id}", app.HandleGuardedRequest(secretRepo.All))
+	app.Get("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.All))
 	app.Post("/api/v1/secrets", app.HandleGuardedRequest(secretRepo.Create))
 	app.Post("/api/v1/secrets/share", app.HandleGuardedRequest(secretRepo.ShareSecret))
 
