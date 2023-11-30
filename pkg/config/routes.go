@@ -8,9 +8,11 @@ import (
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
+	"github.com/casbin/casbin/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -28,6 +30,11 @@ import (
 // @name Authorization
 func (app *Config) LoadRoutes() {
 	validate := validator.New(validator.WithRequiredStructEnabled())
+	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
+
+	if err != nil {
+		log.Fatalf("Failed to create new enforcer: %v", err)
+	}
 
 	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP, Validation: validate}
 	authRepo := &auth.Repo{DB: app.DB}
@@ -35,6 +42,8 @@ func (app *Config) LoadRoutes() {
 	roleRepo := &roles.Repo{DB: app.DB}
 
 	app.Router = mux.NewRouter()
+	app.Router.Use(Authorizer(e))
+
 	app.Post("/api/v1/login", app.HandleRequest(authRepo.Login))
 
 	app.Get("/api/v1/users", app.HandleGuardedRequest(userRepo.All))

@@ -124,7 +124,7 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 		user UserResp
 		role roles.Role
 	)
-	claims, err := getTokenClaims(r)
+	claims, err := GetTokenClaims(r)
 	if err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("get profile error: %v", err), http.StatusInternalServerError)
 		return
@@ -148,7 +148,7 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 	resp.WriteApiJSON(w, http.StatusOK, &user)
 }
 
-func getTokenClaims(r *http.Request) (jwt.MapClaims, error) {
+func GetTokenClaims(r *http.Request) (jwt.MapClaims, error) {
 	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 
 	_, tokenStr, _ := strings.Cut(r.Header.Get("Authorization"), "Bearer ")

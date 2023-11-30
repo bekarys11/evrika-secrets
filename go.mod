@@ -14,6 +14,8 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/casbin/casbin/v2 v2.79.0 // indirect
+	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-ldap/ldap v3.0.3+incompatible // indirect
 	github.com/go-openapi/jsonpointer v0.20.0 // indirect

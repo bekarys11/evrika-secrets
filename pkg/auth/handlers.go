@@ -8,7 +8,6 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -78,13 +77,11 @@ func generateSecretKey() ([]byte, error) {
 }
 
 func checkPassword(hashedPassword, providedPassword string) bool {
-	fmt.Printf("checkPassword func: hashedPassword=%s \n provided password=%s \n", hashedPassword, providedPassword)
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(providedPassword)); err != nil {
 		slog.Error(err.Error())
 		return false
 	}
 
-	log.Println("valid password")
 	return true
 }
 
@@ -93,6 +90,8 @@ func generateToken(user users.User) (string, error) {
 		"exp":     time.Now().Add(48 * time.Hour).Unix(),
 		"user_id": user.ID,
 		"name":    user.Name,
+		"role_id": user.RoleId,
+		"role":    getRoleName(user.RoleId),
 	})
 
 	secretKey, err := generateSecretKey()
@@ -140,23 +139,10 @@ func IsValidToken(tokenStr string) (bool, error) {
 
 }
 
-func GetTokenClaims(tokenStr string) jwt.MapClaims {
-	_, bareTokenStr, _ := strings.Cut(tokenStr, "Bearer ")
-
-	secretKey, err := generateSecretKey()
-
-	if err != nil {
-		fmt.Printf("Error while generating secret key: %v", err.Error())
+func getRoleName(roleId int) string {
+	if roleId == 1 {
+		return "admin"
+	} else {
+		return "user"
 	}
-
-	token, err := jwt.Parse(bareTokenStr, func(token *jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return secretKey, nil
-	})
-
-	return token.Claims.(jwt.MapClaims)
 }
