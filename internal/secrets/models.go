@@ -29,10 +29,14 @@ type SecretSwaggerData struct {
 type SecretSwaggerJson struct {
 	Data []SecretSwaggerData `json:"data"`
 }
+type SecretSwaggerJsonObj struct {
+	Data SecretSwaggerData `json:"data"`
+}
 
 type SecretSwaggerReq struct {
 	Title    string `json:"title" jsonapi:"attr,title" validate:"required" example:"адрес базы данных"`
 	Key      string `json:"key" jsonapi:"attr,key" validate:"required" example:"dbHost"`
 	Data     string `json:"data" jsonapi:"attr,data" validate:"required" example:"localhost:5432"`
+	Type     string `json:"type" example:"env"`
 	AuthorId int    `json:"author_id" db:"author_id" jsonapi:"attr,author_id" validate:"required"  example:"1"`
 }

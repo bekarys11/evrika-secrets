@@ -1,12 +1,12 @@
 package secrets
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/squirrel"
+	"github.com/bekarys11/evrika-secrets/pkg/common"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
+	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"net/http"
@@ -24,6 +24,8 @@ type Repo struct {
 //	 @Accept       json
 //	 @Produce      json
 //
+// @Param 		type query string false "список секретов по типу"
+// @Param 		user query string false "список секретов от пользователя"
 // @Success      200  {object} SecretSwaggerJson
 // @Failure      400  {object}  resp.Err
 // @Failure      500  {object}  resp.Err
@@ -37,6 +39,45 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.WriteApiJSON(w, http.StatusOK, secrets)
+}
+
+//	 @Summary      Объект ключа
+//		@Security ApiKeyAuth
+//	 @Description  Получить ключ по id
+//	 @Tags         secrets
+//	 @Accept       json
+//	 @Produce      json
+//
+// @Param secret_id  path int true "ID ключа"
+//
+// @Success      200  {object} SecretSwaggerJsonObj
+// @Failure      400  {object}  resp.Err
+// @Failure      500  {object}  resp.Err
+// @Router       /api/v1/secrets/:secret_id [get]
+func (s *Repo) One(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	role, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	secret, err := s.getById(secretId, role, userId)
+
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	resp.WriteApiJSON(w, http.StatusOK, &secret)
 }
 
 //	 @Summary      Создать секрет/ключ
@@ -53,42 +94,12 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 //	@Failure      500  {object}  resp.Err
 //	@Router       /api/v1/secrets [post]
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-	var (
-		secret   Secret
-		secretId int
-	)
+	var secret Secret
 
-	if err := json.NewDecoder(r.Body).Decode(&secret); err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err), http.StatusBadRequest)
+	if err := s.createSecret(r, &secret); err != nil {
+		resp.ErrorJSON(w, err)
 		return
 	}
-	tx, err := s.DB.BeginTxx(ctx, nil)
-	if err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("unable to begin transaction: %v", err), http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback()
-	err = tx.QueryRowxContext(ctx, `INSERT INTO secrets (title, key, data, stype, author_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`, secret.Title, secret.Key, secret.Data, secret.Type, secret.AuthorId).Scan(&secretId)
-	switch {
-	case err == sql.ErrNoRows:
-		resp.ErrorJSON(w, fmt.Errorf("no secret with id: %v", err), http.StatusInternalServerError)
-		return
-	case err != nil:
-		resp.ErrorJSON(w, fmt.Errorf("error insert secrets to db: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if _, err = tx.ExecContext(ctx, `INSERT INTO users_secrets (user_id, secret_id) VALUES ($1, $2)`, secret.AuthorId, secretId); err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("error insert users' secrets to db: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("error committing db transaction: %v", err), http.StatusInternalServerError)
-		return
-	}
-
 	resp.WriteJSON(w, 201, "Секрет сохранен")
 }
 

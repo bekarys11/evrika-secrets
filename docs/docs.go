@@ -146,6 +146,58 @@ const docTemplate = `{
             }
         },
         "/api/v1/secrets": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Получить список всех секретов",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "secrets"
+                ],
+                "summary": "Список секретов/ключей",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "список секретов по типу",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "список секретов от пользователя",
+                        "name": "user",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/secrets.SecretSwaggerJson"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -196,14 +248,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/secrets/:user_id": {
+        "/api/v1/secrets/:secret_id": {
             "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Получить список всех секретов",
+                "description": "Получить ключ по id",
                 "consumes": [
                     "application/json"
                 ],
@@ -213,12 +265,12 @@ const docTemplate = `{
                 "tags": [
                     "secrets"
                 ],
-                "summary": "Список секретов/ключей",
+                "summary": "Объект ключа",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
+                        "description": "ID ключа",
+                        "name": "secret_id",
                         "in": "path",
                         "required": true
                     }
@@ -227,7 +279,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/secrets.SecretSwaggerJson"
+                            "$ref": "#/definitions/secrets.SecretSwaggerJsonObj"
                         }
                     },
                     "400": {
@@ -507,6 +559,15 @@ const docTemplate = `{
                     "type": "string",
                     "example": "адрес базы данных"
                 },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "auth",
+                        "ssh",
+                        "env"
+                    ],
+                    "example": "env"
+                },
                 "updated_at": {
                     "type": "string",
                     "example": "2023-11-20T11:15:37Z"
@@ -540,6 +601,14 @@ const docTemplate = `{
                 }
             }
         },
+        "secrets.SecretSwaggerJsonObj": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/secrets.SecretSwaggerData"
+                }
+            }
+        },
         "secrets.SecretSwaggerReq": {
             "type": "object",
             "required": [
@@ -564,6 +633,10 @@ const docTemplate = `{
                 "title": {
                     "type": "string",
                     "example": "адрес базы данных"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "env"
                 }
             }
         },
@@ -710,11 +783,11 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8888",
+	Host:             "10.10.1.59:44044",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "Evrika Secrets API",
-	Description:      "Platform for managing application secrets and environment variables.",
+	Description:      "Platform for managing application secrets and keys.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

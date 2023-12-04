@@ -4,15 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/roles"
+	"github.com/bekarys11/evrika-secrets/pkg/common"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/go-ldap/ldap"
 	"github.com/go-playground/validator/v10"
-	"github.com/golang-jwt/jwt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
-	"os"
-	"strings"
 )
 
 type Repo struct {
@@ -124,7 +122,7 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 		user UserResp
 		role roles.Role
 	)
-	claims, err := GetTokenClaims(r)
+	claims, err := common.GetTokenClaims(r)
 	if err != nil {
 		resp.ErrorJSON(w, fmt.Errorf("get profile error: %v", err), http.StatusInternalServerError)
 		return
@@ -146,23 +144,4 @@ func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
 	user.Role = &role
 
 	resp.WriteApiJSON(w, http.StatusOK, &user)
-}
-
-func GetTokenClaims(r *http.Request) (jwt.MapClaims, error) {
-	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
-
-	_, tokenStr, _ := strings.Cut(r.Header.Get("Authorization"), "Bearer ")
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return secretKey, nil
-	})
-	if err != nil {
-		return nil, err
-	} else if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		return claims, nil
-	} else {
-		return nil, errors.New("unknown claims type, cannot proceed")
-	}
 }

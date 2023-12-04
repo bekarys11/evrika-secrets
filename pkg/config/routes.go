@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	_ "github.com/bekarys11/evrika-secrets/docs"
 	"github.com/bekarys11/evrika-secrets/internal/roles"
@@ -55,12 +56,14 @@ func (app *Config) LoadRoutes() {
 	api.HandleFunc("/profile", userRepo.GetProfile).Methods("GET")
 
 	api.HandleFunc("/secrets", secretRepo.All).Methods("GET")
+	api.HandleFunc("/secrets/{secret_id}", secretRepo.One).Methods("GET")
+
 	api.HandleFunc("/secrets", secretRepo.Create).Methods("POST")
 	api.HandleFunc("/secrets/share", secretRepo.ShareSecret).Methods("POST")
 
 	api.HandleFunc("/roles", roleRepo.All).Methods("GET")
 
-	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL("http://10.10.1.59:44044/swagger/doc.json"))).Methods("GET")
+	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("APP_PORT"))))).Methods("GET")
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }

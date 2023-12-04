@@ -80,6 +80,13 @@ definitions:
       title:
         example: адрес базы данных
         type: string
+      type:
+        enum:
+        - auth
+        - ssh
+        - env
+        example: env
+        type: string
       updated_at:
         example: "2023-11-20T11:15:37Z"
         type: string
@@ -107,6 +114,11 @@ definitions:
           $ref: '#/definitions/secrets.SecretSwaggerData'
         type: array
     type: object
+  secrets.SecretSwaggerJsonObj:
+    properties:
+      data:
+        $ref: '#/definitions/secrets.SecretSwaggerData'
+    type: object
   secrets.SecretSwaggerReq:
     properties:
       author_id:
@@ -120,6 +132,9 @@ definitions:
         type: string
       title:
         example: адрес базы данных
+        type: string
+      type:
+        example: env
         type: string
     required:
     - author_id
@@ -219,10 +234,10 @@ definitions:
     - password
     - role_id
     type: object
-host: localhost:8888
+host: 10.10.1.59:44044
 info:
   contact: {}
-  description: Platform for managing application secrets and environment variables.
+  description: Platform for managing application secrets and keys.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -310,6 +325,39 @@ paths:
       tags:
       - roles
   /api/v1/secrets:
+    get:
+      consumes:
+      - application/json
+      description: Получить список всех секретов
+      parameters:
+      - description: список секретов по типу
+        in: query
+        name: type
+        type: string
+      - description: список секретов от пользователя
+        in: query
+        name: user
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/secrets.SecretSwaggerJson'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Список секретов/ключей
+      tags:
+      - secrets
     post:
       consumes:
       - application/json
@@ -341,15 +389,15 @@ paths:
       summary: Создать секрет/ключ
       tags:
       - secrets
-  /api/v1/secrets/:user_id:
+  /api/v1/secrets/:secret_id:
     get:
       consumes:
       - application/json
-      description: Получить список всех секретов
+      description: Получить ключ по id
       parameters:
-      - description: ID пользователя
+      - description: ID ключа
         in: path
-        name: user_id
+        name: secret_id
         required: true
         type: integer
       produces:
@@ -358,7 +406,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/secrets.SecretSwaggerJson'
+            $ref: '#/definitions/secrets.SecretSwaggerJsonObj'
         "400":
           description: Bad Request
           schema:
@@ -369,7 +417,7 @@ paths:
             $ref: '#/definitions/resp.Err'
       security:
       - ApiKeyAuth: []
-      summary: Список секретов/ключей
+      summary: Объект ключа
       tags:
       - secrets
   /api/v1/secrets/share:
