@@ -2,8 +2,8 @@ package config
 
 import (
 	"fmt"
-	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
+	"github.com/bekarys11/evrika-secrets/pkg/common"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/casbin/casbin/v2"
 	"log"
@@ -35,7 +35,7 @@ func Authenticator() func(next http.Handler) http.Handler {
 func Authorizer(e *casbin.Enforcer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
-			claims, err := users.GetTokenClaims(r)
+			claims, err := common.GetTokenClaims(r)
 			if err != nil {
 				resp.ErrorJSON(w, fmt.Errorf("get profile error: %v", err), http.StatusInternalServerError)
 				return
