@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Masterminds/squirrel"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -12,7 +13,8 @@ import (
 )
 
 type Repo struct {
-	DB *sqlx.DB
+	DB       *sqlx.DB
+	QBuilder squirrel.StatementBuilderType
 }
 
 //	 @Summary      Список секретов/ключей

@@ -1,6 +1,7 @@
 package config
 
 import (
+	sq "github.com/Masterminds/squirrel"
 	_ "github.com/bekarys11/evrika-secrets/docs"
 	"github.com/bekarys11/evrika-secrets/internal/roles"
 	"github.com/bekarys11/evrika-secrets/internal/secrets"
@@ -28,6 +29,7 @@ import (
 func (app *Config) LoadRoutes() {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
+	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 	if err != nil {
 		log.Fatalf("Failed to create new enforcer: %v", err)
@@ -35,7 +37,7 @@ func (app *Config) LoadRoutes() {
 
 	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP, Validation: validate}
 	authRepo := &auth.Repo{DB: app.DB}
-	secretRepo := &secrets.Repo{DB: app.DB}
+	secretRepo := &secrets.Repo{DB: app.DB, QBuilder: psql}
 	roleRepo := &roles.Repo{DB: app.DB}
 
 	app.Router = mux.NewRouter()

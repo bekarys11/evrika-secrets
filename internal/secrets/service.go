@@ -10,17 +10,12 @@ import (
 )
 
 func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
+
 	qParams := r.URL.Query()
 	secretType := qParams.Get("type")
-	userQ := qParams.Get("user")
-	authorId, _ := strconv.Atoi(userQ)
-	log.Printf("[DEBUG] user type: %d\n secret type: %s", authorId, secretType)
-	query := `
-		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at
-		FROM users_secrets
-		JOIN secrets ON users_secrets.secret_id = secrets.id
-		WHERE (secrets.author_id = $1 OR $1 = 0)
-`
+	authorId, _ := strconv.Atoi(qParams.Get("user"))
+
+	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id")
 
 	claims, err := users.GetTokenClaims(r)
 	if err != nil {
@@ -31,18 +26,20 @@ func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
 	if !ok {
 		return nil, errors.New("user id is not provided")
 	}
-
 	userRole := claims["role"]
+
+	// FILTERS
 	if userRole == "user" {
-		query += ` AND users_secrets.user_id = ` + strconv.Itoa(int(userId.(float64)))
+		query = query.Where("users_secrets.user_id = ?", strconv.Itoa(int(userId.(float64))))
+	}
+	if hasType := qParams.Has("type"); hasType {
+		query = query.Where("secrets.stype = ?", secretType)
+	}
+	if authorId != 0 {
+		query = query.Where("secrets.author_id = ?", authorId)
 	}
 
-	if hasType := qParams.Has("type"); hasType {
-		query += ` AND secrets.stype = '` + secretType + `'`
-	}
-	query += ` LIMIT 30;`
-	log.Println(query)
-	rows, err := s.DB.Queryx(query, authorId)
+	rows, err := query.RunWith(s.DB).Query()
 	if err != nil {
 		return nil, fmt.Errorf("sql query error: %v", err)
 	}
