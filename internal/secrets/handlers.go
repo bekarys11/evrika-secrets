@@ -4,9 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/bekarys11/evrika-secrets/internal/users"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -29,58 +27,13 @@ type Repo struct {
 // @Failure      500  {object}  resp.Err
 // @Router       /api/v1/secrets [get]
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
-	var (
-		secrets []*Secret
-		//query   string
-		rows *sqlx.Rows
-		err  error
-	)
-
-	claims, err := users.GetTokenClaims(r)
-	userId, ok := claims["user_id"]
-	if !ok {
-		resp.ErrorJSON(w, errors.New("user id is not provided"), http.StatusBadRequest)
-		return
-	}
-	userRole := claims["role"]
-	if userRole == "admin" {
-		rows, err = s.DB.Queryx(`
-		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
-		FROM users_secrets
-        JOIN secrets ON users_secrets.secret_id = secrets.id
-		LIMIT 10;
-`)
-	} else {
-		rows, err = s.DB.Queryx(`
-		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
-		FROM users_secrets
-        JOIN secrets ON users_secrets.secret_id = secrets.id
-		WHERE users_secrets.user_id = $1
-		LIMIT 10;
-`, userId)
-	}
-
-	//	rows, err := s.DB.Queryx(`
-	//		SELECT secrets.id, secrets.title, secrets.key, secrets.data, secrets.author_id, secrets.created_at, secrets.updated_at
-	//		FROM users_secrets
-	//        JOIN secrets ON users_secrets.secret_id = secrets.id
-	//		WHERE users_secrets.user_id = $1
-	//		LIMIT 10;
-	//`, userId)
+	secrets, err := s.getSecrets(r)
 
 	if err != nil {
-		resp.ErrorJSON(w, err, http.StatusInternalServerError)
+		resp.ErrorJSON(w, err)
 		return
 	}
 
-	for rows.Next() {
-		var secret Secret
-		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
-			resp.ErrorJSON(w, err, http.StatusInternalServerError)
-			return
-		}
-		secrets = append(secrets, &secret)
-	}
 	resp.WriteApiJSON(w, http.StatusOK, secrets)
 }
 
@@ -114,7 +67,7 @@ func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback()
-	err = tx.QueryRowxContext(ctx, `INSERT INTO secrets (title, key, data, author_id) VALUES ($1, $2, $3, $4) RETURNING id`, secret.Title, secret.Key, secret.Data, secret.AuthorId).Scan(&secretId)
+	err = tx.QueryRowxContext(ctx, `INSERT INTO secrets (title, key, data, stype, author_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`, secret.Title, secret.Key, secret.Data, secret.Type, secret.AuthorId).Scan(&secretId)
 	switch {
 	case err == sql.ErrNoRows:
 		resp.ErrorJSON(w, fmt.Errorf("no secret with id: %v", err), http.StatusInternalServerError)

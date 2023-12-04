@@ -9,6 +9,7 @@ type Secret struct {
 	Title     string    `json:"title" jsonapi:"attr,title" validate:"required" example:"адрес базы данных"`
 	Key       string    `json:"key" jsonapi:"attr,key" validate:"required" example:"dbHost"`
 	Data      string    `json:"data" jsonapi:"attr,data" validate:"required" example:"localhost:5432"`
+	Type      string    `json:"type" jsonapi:"attr,type" validate:"oneof= auth ssh env" example:"env"`
 	AuthorId  int       `json:"author_id" db:"author_id" jsonapi:"attr,author_id" validate:"required"  example:"1"`
 	CreatedAt time.Time `json:"created_at" db:"created_at" jsonapi:"attr,created_at,iso8601" example:"2023-11-20T11:15:37Z"`
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at" jsonapi:"attr,updated_at,iso8601" example:"2023-11-20T11:15:37Z"`
