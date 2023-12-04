@@ -3,12 +3,34 @@ package config
 import (
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/internal/users"
+	"github.com/bekarys11/evrika-secrets/pkg/auth"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/casbin/casbin/v2"
 	"log"
 	"log/slog"
 	"net/http"
 )
+
+func Authenticator() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			isValid, err := auth.IsValidToken(r.Header.Get("Authorization"))
+
+			if err != nil {
+				resp.ErrorJSON(w, fmt.Errorf("token error: %v", err), http.StatusUnauthorized)
+				return
+			}
+
+			if isValid {
+				next.ServeHTTP(w, r)
+			} else {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+		}
+		return http.HandlerFunc(fn)
+	}
+}
 
 func Authorizer(e *casbin.Enforcer) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
