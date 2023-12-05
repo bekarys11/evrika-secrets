@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/common"
 	"github.com/lib/pq"
 	"log"
@@ -13,13 +14,13 @@ import (
 	"strconv"
 )
 
-func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
+func (s *Repo) getSecrets(r *http.Request) (secrets []*SecretResp, err error) {
 
 	qParams := r.URL.Query()
 	secretType := qParams.Get("type")
 	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
 
-	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id")
+	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at, users.id, users.name, users.email, users.is_active, users.role_id").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id").Join("users ON users_secrets.user_id = users.id")
 
 	userId, err := common.GetUserIdFromToken(r)
 	if err != nil {
@@ -53,10 +54,18 @@ func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
 	}
 
 	for rows.Next() {
-		var secret Secret
-		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
+		var (
+			secret SecretResp
+			user   users.User
+		)
+		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt, &user.ID, &user.Name, &user.Email, &user.IsActive, &user.RoleId); err != nil {
 			return nil, err
 		}
+
+		if user.ID != 0 {
+			secret.User = &user
+		}
+
 		secrets = append(secrets, &secret)
 	}
 
