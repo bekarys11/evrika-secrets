@@ -32,9 +32,9 @@ func StartApp() {
 		log.Fatal(err)
 	}
 
-	//if err := app.ConnectToLDAP(); err != nil {
-	//	log.Fatal(err)
-	//}
+	if err := app.ConnectToLDAP(); err != nil {
+		log.Fatal(err)
+	}
 
 	app.LoadRoutes()
 	handler := handleCORS(app.Router)

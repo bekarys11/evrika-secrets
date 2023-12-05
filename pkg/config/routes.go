@@ -63,7 +63,7 @@ func (app *Config) LoadRoutes() {
 
 	api.HandleFunc("/roles", roleRepo.All).Methods("GET")
 
-	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("APP_PORT"))))).Methods("GET")
+	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
 
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 }
