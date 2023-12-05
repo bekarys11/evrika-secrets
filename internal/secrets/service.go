@@ -3,33 +3,19 @@ package secrets
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bekarys11/evrika-secrets/pkg/common"
 	"github.com/lib/pq"
 	"log"
-	"net/http"
+	"net/url"
 	"strconv"
 )
 
-func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
-
-	qParams := r.URL.Query()
+func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
 	secretType := qParams.Get("type")
 	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
 
 	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id")
-
-	userId, err := common.GetUserIdFromToken(r)
-	if err != nil {
-		return nil, err
-	}
-
-	userRole, err := common.GetRoleFromToken(r)
-	if err != nil {
-		return nil, err
-	}
 
 	// FILTERS
 	if userRole == "user" {
@@ -85,12 +71,8 @@ func (s *Repo) getById(secretId string, userRole, userId string) (secret Secret,
 	return secret, nil
 }
 
-func (s *Repo) createSecret(r *http.Request, secret *Secret) error {
+func (s *Repo) createSecret(secret *Secret) error {
 	var secretId int
-
-	if err := json.NewDecoder(r.Body).Decode(&secret); err != nil {
-		return fmt.Errorf("invalid JSON: %v", err)
-	}
 
 	tx, err := s.DB.BeginTxx(context.Background(), nil)
 	if err != nil {

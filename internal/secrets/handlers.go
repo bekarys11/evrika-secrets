@@ -30,7 +30,21 @@ type Repo struct {
 // @Failure      500  {object}  resp.Err
 // @Router       /api/v1/secrets [get]
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
-	secrets, err := s.getSecrets(r)
+	qParams := r.URL.Query()
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("token claims error: %v", err))
+		return
+	}
+
+	userRole, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("token claims error: %v", err))
+		return
+	}
+
+	secrets, err := s.getSecrets(qParams, userRole, userId)
 
 	if err != nil {
 		resp.ErrorJSON(w, err)
@@ -94,9 +108,13 @@ func (s *Repo) One(w http.ResponseWriter, r *http.Request) {
 //	@Router       /api/v1/secrets [post]
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	var secret Secret
+	if err := json.NewDecoder(r.Body).Decode(&secret); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err))
+		return
+	}
 
-	if err := s.createSecret(r, &secret); err != nil {
-		resp.ErrorJSON(w, err)
+	if err := s.createSecret(&secret); err != nil {
+		resp.ErrorJSON(w, err, 500)
 		return
 	}
 	resp.WriteJSON(w, 201, "Секрет сохранен")
