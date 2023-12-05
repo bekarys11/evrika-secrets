@@ -3,18 +3,11 @@ package secrets
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Masterminds/squirrel"
 	"github.com/bekarys11/evrika-secrets/pkg/common"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"net/http"
 )
-
-type Repo struct {
-	DB       *sqlx.DB
-	QBuilder squirrel.StatementBuilderType
-}
 
 //	 @Summary      Список секретов/ключей
 //		@Security ApiKeyAuth

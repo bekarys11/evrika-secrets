@@ -5,11 +5,18 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"log"
 	"net/url"
 	"strconv"
 )
+
+type Repo struct {
+	DB       *sqlx.DB
+	QBuilder squirrel.StatementBuilderType
+}
 
 func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
 	secretType := qParams.Get("type")
