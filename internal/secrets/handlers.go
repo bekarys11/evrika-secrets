@@ -8,7 +8,6 @@ import (
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	"net/http"
 )
 
@@ -124,29 +123,8 @@ func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	txn, err := s.DB.Beginx()
-
-	stmt, err := txn.Preparex(pq.CopyIn("users_secrets", "user_id", "secret_id"))
-	if err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("error preparing users' secrets transaction: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	for _, v := range usersSecrets.UserIds {
-		if _, err = stmt.Exec(v, usersSecrets.SecretId); err != nil {
-			resp.ErrorJSON(w, fmt.Errorf("error executing users' secrets transaction: %v", err), http.StatusInternalServerError)
-			return
-		}
-	}
-	defer stmt.Close()
-
-	if _, err = stmt.Exec(); err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("error execute users' secrets transaction: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	if err = txn.Commit(); err != nil {
-		resp.ErrorJSON(w, fmt.Errorf("error commiting users' secrets transaction: %v", err), http.StatusInternalServerError)
+	if err := s.shareSecret(usersSecrets); err != nil {
+		resp.ErrorJSON(w, err)
 		return
 	}
 

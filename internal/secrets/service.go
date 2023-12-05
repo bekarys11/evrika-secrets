@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bekarys11/evrika-secrets/pkg/common"
+	"github.com/lib/pq"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,7 +17,7 @@ func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
 
 	qParams := r.URL.Query()
 	secretType := qParams.Get("type")
-	authorId, _ := strconv.Atoi(qParams.Get("user"))
+	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
 
 	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id")
 
@@ -37,11 +38,13 @@ func (s *Repo) getSecrets(r *http.Request) (secrets []*Secret, err error) {
 	if hasType := qParams.Has("type"); hasType {
 		query = query.Where("secrets.stype = ?", secretType)
 	}
-	if authorId != 0 {
+	if userIDQuery != 0 {
 		if userRole != "admin" {
 			return nil, errors.New("вы не имеете достаточно прав")
 		}
-		query = query.Where("secrets.author_id = ?", authorId)
+
+		// admin can see any user's secrets
+		query = query.Where("users_secrets.user_id = ?", userIDQuery)
 	}
 
 	rows, err := query.RunWith(s.DB).Query()
@@ -108,6 +111,32 @@ func (s *Repo) createSecret(r *http.Request, secret *Secret) error {
 
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("error committing db transaction: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Repo) shareSecret(usersSecrets UsersSecret) error {
+	txn, err := s.DB.Beginx()
+
+	stmt, err := txn.Preparex(pq.CopyIn("users_secrets", "user_id", "secret_id"))
+	if err != nil {
+		return fmt.Errorf("error preparing users' secrets transaction: %v", err)
+	}
+
+	for _, v := range usersSecrets.UserIds {
+		if _, err = stmt.Exec(v, usersSecrets.SecretId); err != nil {
+			return fmt.Errorf("error executing users' secrets transaction: %v", err)
+		}
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(); err != nil {
+		return fmt.Errorf("error execute users' secrets transaction: %v", err)
+	}
+
+	if err = txn.Commit(); err != nil {
+		return fmt.Errorf("error commiting users' secrets transaction: %v", err)
 	}
 
 	return nil
