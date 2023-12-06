@@ -3,34 +3,30 @@ package secrets
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bekarys11/evrika-secrets/internal/users"
-	"github.com/bekarys11/evrika-secrets/pkg/common"
+	"github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"log"
-	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 )
 
-func (s *Repo) getSecrets(r *http.Request) (secrets []*SecretResp, err error) {
+type Repo struct {
+	DB       *sqlx.DB
+	QBuilder squirrel.StatementBuilderType
+}
 
-	qParams := r.URL.Query()
+func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
 	secretType := qParams.Get("type")
 	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
 
-	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at, users.id, users.name, users.email, users.is_active, users.role_id").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id").Join("users ON users_secrets.user_id = users.id")
-
-	userId, err := common.GetUserIdFromToken(r)
-	if err != nil {
-		return nil, err
-	}
-
-	userRole, err := common.GetRoleFromToken(r)
-	if err != nil {
-		return nil, err
-	}
+	query := s.QBuilder.
+		Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").
+		From("users_secrets").
+		Join("secrets ON users_secrets.secret_id = secrets.id")
 
 	// FILTERS
 	if userRole == "user" {
@@ -54,18 +50,10 @@ func (s *Repo) getSecrets(r *http.Request) (secrets []*SecretResp, err error) {
 	}
 
 	for rows.Next() {
-		var (
-			secret SecretResp
-			user   users.User
-		)
-		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt, &user.ID, &user.Name, &user.Email, &user.IsActive, &user.RoleId); err != nil {
+		var secret Secret
+		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
 			return nil, err
 		}
-
-		if user.ID != 0 {
-			secret.User = &user
-		}
-
 		secrets = append(secrets, &secret)
 	}
 
@@ -94,12 +82,8 @@ func (s *Repo) getById(secretId string, userRole, userId string) (secret Secret,
 	return secret, nil
 }
 
-func (s *Repo) createSecret(r *http.Request, secret *Secret) error {
+func (s *Repo) createSecret(secret *Secret) error {
 	var secretId int
-
-	if err := json.NewDecoder(r.Body).Decode(&secret); err != nil {
-		return fmt.Errorf("invalid JSON: %v", err)
-	}
 
 	tx, err := s.DB.BeginTxx(context.Background(), nil)
 	if err != nil {
@@ -148,5 +132,64 @@ func (s *Repo) shareSecret(usersSecrets UsersSecret) error {
 		return fmt.Errorf("error commiting users' secrets transaction: %v", err)
 	}
 
+	return nil
+}
+
+func (s *Repo) updateById(secretId, userRole, userId string, payload SecretReq) error {
+	if userRole == "user" {
+		if err := s.checkForSecretAuthor(secretId, userRole, userId); err != nil {
+			return err
+		}
+	}
+
+	query := s.QBuilder.
+		Update("secrets").
+		SetMap(map[string]interface{}{
+			"title":      payload.Title,
+			"key":        payload.Key,
+			"data":       payload.Data,
+			"stype":      payload.Type,
+			"author_id":  payload.AuthorId,
+			"updated_at": time.Now(),
+		}).
+		Where("id = ?", secretId)
+
+	_, err := query.RunWith(s.DB).Exec()
+	if err != nil {
+		return fmt.Errorf("error executing update query: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Repo) deleteById(secretId, userRole, userId string) error {
+
+	if userRole == "user" {
+		if err := s.checkForSecretAuthor(secretId, userRole, userId); err != nil {
+			return err
+		}
+	}
+
+	query := s.QBuilder.Delete("secrets").Where("id = ?", secretId)
+
+	_, err := query.RunWith(s.DB).Exec()
+	if err != nil {
+		return fmt.Errorf("error executing delete query: %v", err)
+	}
+
+	return nil
+}
+
+// if given user has "user role", it checks if the user is author of the given secret
+func (s *Repo) checkForSecretAuthor(secretId, userRole, userId string) error {
+	secret, err := s.getById(secretId, userRole, userId)
+	if err != nil {
+		return fmt.Errorf("error querying secret: %v", err)
+	}
+
+	userID, _ := strconv.Atoi(userId)
+	if secret.AuthorId != userID {
+		return errors.New("вы не имеете достаточно прав")
+	}
 	return nil
 }

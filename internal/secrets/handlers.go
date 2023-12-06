@@ -3,18 +3,11 @@ package secrets
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Masterminds/squirrel"
 	"github.com/bekarys11/evrika-secrets/pkg/common"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 	"net/http"
 )
-
-type Repo struct {
-	DB       *sqlx.DB
-	QBuilder squirrel.StatementBuilderType
-}
 
 //	 @Summary      Список секретов/ключей
 //		@Security ApiKeyAuth
@@ -30,7 +23,21 @@ type Repo struct {
 // @Failure      500  {object}  resp.Err
 // @Router       /api/v1/secrets [get]
 func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
-	secrets, err := s.getSecrets(r)
+	qParams := r.URL.Query()
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("token claims error: %v", err))
+		return
+	}
+
+	userRole, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("token claims error: %v", err))
+		return
+	}
+
+	secrets, err := s.getSecrets(qParams, userRole, userId)
 
 	if err != nil {
 		resp.ErrorJSON(w, err)
@@ -94,9 +101,13 @@ func (s *Repo) One(w http.ResponseWriter, r *http.Request) {
 //	@Router       /api/v1/secrets [post]
 func (s *Repo) Create(w http.ResponseWriter, r *http.Request) {
 	var secret Secret
+	if err := json.NewDecoder(r.Body).Decode(&secret); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid JSON: %v", err))
+		return
+	}
 
-	if err := s.createSecret(r, &secret); err != nil {
-		resp.ErrorJSON(w, err)
+	if err := s.createSecret(&secret); err != nil {
+		resp.ErrorJSON(w, err, 500)
 		return
 	}
 	resp.WriteJSON(w, 201, "Секрет сохранен")
@@ -129,4 +140,81 @@ func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp.WriteJSON(w, 201, "Секрет сохранен")
+}
+
+//	 @Summary      Редактировать ключ
+//		@Security ApiKeyAuth
+//	 @Description  Администратор может изменять все ключи, а пользователь только свои.
+//	 @Tags         secrets
+//
+// @Param input body SecretReq true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      200  {string}   "Секрет изменен"
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/secrets/:secret_id [put]
+func (s *Repo) Update(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+	var payload SecretReq
+
+	if err := resp.ReadJSON(w, r, &payload); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid json: %v", err))
+		return
+	}
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	role, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	if err := s.updateById(secretId, role, userId, payload); err != nil {
+		resp.ErrorJSON(w, err, 500)
+		return
+	}
+
+	resp.WriteJSON(w, 200, "Секрет изменен")
+}
+
+//	 @Summary      Удалить ключ
+//		@Security ApiKeyAuth
+//	 @Description  Администратор может удалять любой ключ, а пользователь только свои.
+//	 @Tags         secrets
+//
+// @Accept       json
+// @Produce      json
+// @Success      200  {string}   "Секрет удален"
+// @Failure      400  {object}  resp.Err
+// @Failure      500  {object}  resp.Err
+// @Router       /api/v1/secrets/:secret_id [delete]
+func (s *Repo) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	role, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	if err := s.deleteById(secretId, role, userId); err != nil {
+		resp.ErrorJSON(w, err, 500)
+		return
+	}
+	resp.WriteJSON(w, 200, "Секрет удален")
 }
