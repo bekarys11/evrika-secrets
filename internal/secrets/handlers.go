@@ -141,3 +141,44 @@ func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 
 	resp.WriteJSON(w, 201, "Секрет сохранен")
 }
+
+//	 @Summary      Редактировать ключ
+//		@Security ApiKeyAuth
+//	 @Description  Администратор может изменять все ключи, а пользователь только свои.
+//	 @Tags         secrets
+//
+// @Param input body SecretReq true "добавить данные в тело запроса"
+//
+//	@Accept       json
+//	@Produce      json
+//	@Success      201  {string}   "Секрет изменен"
+//	@Failure      400  {object}  resp.Err
+//	@Failure      500  {object}  resp.Err
+//	@Router       /api/v1/secrets/:secret_id [put]
+func (s *Repo) Update(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+	var payload SecretReq
+
+	if err := resp.ReadJSON(w, r, &payload); err != nil {
+		resp.ErrorJSON(w, fmt.Errorf("invalid json: %v", err))
+		return
+	}
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	role, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	if err := s.updateById(secretId, role, userId, payload); err != nil {
+		resp.ErrorJSON(w, err, 500)
+		return
+	}
+}

@@ -295,6 +295,55 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Администратор может изменять все ключи, а пользователь только свои.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "secrets"
+                ],
+                "summary": "Редактировать ключ",
+                "parameters": [
+                    {
+                        "description": "добавить данные в тело запроса",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/secrets.SecretReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Секрет изменен",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/secrets/share": {
@@ -571,6 +620,42 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2023-11-20T11:15:37Z"
+                }
+            }
+        },
+        "secrets.SecretReq": {
+            "type": "object",
+            "required": [
+                "author_id",
+                "data",
+                "key",
+                "title"
+            ],
+            "properties": {
+                "author_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "data": {
+                    "type": "string",
+                    "example": "localhost:5432"
+                },
+                "key": {
+                    "type": "string",
+                    "example": "dbHost"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "адрес базы данных"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "auth",
+                        "ssh",
+                        "env"
+                    ],
+                    "example": "env"
                 }
             }
         },

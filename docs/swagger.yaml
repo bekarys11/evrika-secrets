@@ -96,6 +96,33 @@ definitions:
     - key
     - title
     type: object
+  secrets.SecretReq:
+    properties:
+      author_id:
+        example: 1
+        type: integer
+      data:
+        example: localhost:5432
+        type: string
+      key:
+        example: dbHost
+        type: string
+      title:
+        example: адрес базы данных
+        type: string
+      type:
+        enum:
+        - auth
+        - ssh
+        - env
+        example: env
+        type: string
+    required:
+    - author_id
+    - data
+    - key
+    - title
+    type: object
   secrets.SecretSwaggerData:
     properties:
       attributes:
@@ -418,6 +445,37 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Объект ключа
+      tags:
+      - secrets
+    put:
+      consumes:
+      - application/json
+      description: Администратор может изменять все ключи, а пользователь только свои.
+      parameters:
+      - description: добавить данные в тело запроса
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/secrets.SecretReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Секрет изменен
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Редактировать ключ
       tags:
       - secrets
   /api/v1/secrets/share:

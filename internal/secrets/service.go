@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 type Repo struct {
@@ -22,7 +23,10 @@ func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets 
 	secretType := qParams.Get("type")
 	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
 
-	query := s.QBuilder.Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").From("users_secrets").Join("secrets ON users_secrets.secret_id = secrets.id")
+	query := s.QBuilder.
+		Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").
+		From("users_secrets").
+		Join("secrets ON users_secrets.secret_id = secrets.id")
 
 	// FILTERS
 	if userRole == "user" {
@@ -126,6 +130,40 @@ func (s *Repo) shareSecret(usersSecrets UsersSecret) error {
 
 	if err = txn.Commit(); err != nil {
 		return fmt.Errorf("error commiting users' secrets transaction: %v", err)
+	}
+
+	return nil
+}
+
+func (s *Repo) updateById(secretId, userRole, userId string, payload SecretReq) error {
+
+	if userRole == "user" {
+		secret, err := s.getById(secretId, userRole, userId)
+		if err != nil {
+			return fmt.Errorf("error querying secret: %v", err)
+		}
+
+		userID, _ := strconv.Atoi(userId)
+		if secret.AuthorId != userID {
+			return errors.New("вы не имеете достаточно прав")
+		}
+	}
+
+	query := s.QBuilder.
+		Update("secrets").
+		SetMap(map[string]interface{}{
+			"title":      payload.Title,
+			"key":        payload.Key,
+			"data":       payload.Data,
+			"stype":      payload.Type,
+			"author_id":  payload.AuthorId,
+			"updated_at": time.Now(),
+		}).
+		Where("id = ?", secretId)
+
+	_, err := query.RunWith(s.DB).Exec()
+	if err != nil {
+		return fmt.Errorf("error executing query: %v", err)
 	}
 
 	return nil
