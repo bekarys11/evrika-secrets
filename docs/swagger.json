@@ -319,8 +319,46 @@
                     }
                 ],
                 "responses": {
-                    "201": {
+                    "200": {
                         "description": "Секрет изменен",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/resp.Err"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Администратор может удалять любой ключ, а пользователь только свои.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "secrets"
+                ],
+                "summary": "Удалить ключ",
+                "responses": {
+                    "200": {
+                        "description": "Секрет удален",
                         "schema": {
                             "type": "string"
                         }

@@ -417,6 +417,30 @@ paths:
       tags:
       - secrets
   /api/v1/secrets/:secret_id:
+    delete:
+      consumes:
+      - application/json
+      description: Администратор может удалять любой ключ, а пользователь только свои.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Секрет удален
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/resp.Err'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/resp.Err'
+      security:
+      - ApiKeyAuth: []
+      summary: Удалить ключ
+      tags:
+      - secrets
     get:
       consumes:
       - application/json
@@ -461,7 +485,7 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
+        "200":
           description: Секрет изменен
           schema:
             type: string
