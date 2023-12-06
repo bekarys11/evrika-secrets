@@ -12,6 +12,8 @@ func handleCORS(router *mux.Router) http.Handler {
 		AllowedMethods: []string{
 			http.MethodPost,
 			http.MethodGet,
+			http.MethodPut,
+			http.MethodDelete,
 		},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: false,
