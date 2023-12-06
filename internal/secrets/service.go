@@ -136,16 +136,9 @@ func (s *Repo) shareSecret(usersSecrets UsersSecret) error {
 }
 
 func (s *Repo) updateById(secretId, userRole, userId string, payload SecretReq) error {
-
 	if userRole == "user" {
-		secret, err := s.getById(secretId, userRole, userId)
-		if err != nil {
-			return fmt.Errorf("error querying secret: %v", err)
-		}
-
-		userID, _ := strconv.Atoi(userId)
-		if secret.AuthorId != userID {
-			return errors.New("вы не имеете достаточно прав")
+		if err := s.checkForSecretAuthor(secretId, userRole, userId); err != nil {
+			return err
 		}
 	}
 
@@ -163,8 +156,40 @@ func (s *Repo) updateById(secretId, userRole, userId string, payload SecretReq) 
 
 	_, err := query.RunWith(s.DB).Exec()
 	if err != nil {
-		return fmt.Errorf("error executing query: %v", err)
+		return fmt.Errorf("error executing update query: %v", err)
 	}
 
+	return nil
+}
+
+func (s *Repo) deleteById(secretId, userRole, userId string) error {
+
+	if userRole == "user" {
+		if err := s.checkForSecretAuthor(secretId, userRole, userId); err != nil {
+			return err
+		}
+	}
+
+	query := s.QBuilder.Delete("secrets").Where("id = ?", secretId)
+
+	_, err := query.RunWith(s.DB).Exec()
+	if err != nil {
+		return fmt.Errorf("error executing delete query: %v", err)
+	}
+
+	return nil
+}
+
+// if given user has "user role", it checks if the user is author of the given secret
+func (s *Repo) checkForSecretAuthor(secretId, userRole, userId string) error {
+	secret, err := s.getById(secretId, userRole, userId)
+	if err != nil {
+		return fmt.Errorf("error querying secret: %v", err)
+	}
+
+	userID, _ := strconv.Atoi(userId)
+	if secret.AuthorId != userID {
+		return errors.New("вы не имеете достаточно прав")
+	}
 	return nil
 }

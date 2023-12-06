@@ -151,7 +151,7 @@ func (s *Repo) ShareSecret(w http.ResponseWriter, r *http.Request) {
 //
 //	@Accept       json
 //	@Produce      json
-//	@Success      201  {string}   "Секрет изменен"
+//	@Success      200  {string}   "Секрет изменен"
 //	@Failure      400  {object}  resp.Err
 //	@Failure      500  {object}  resp.Err
 //	@Router       /api/v1/secrets/:secret_id [put]
@@ -181,4 +181,40 @@ func (s *Repo) Update(w http.ResponseWriter, r *http.Request) {
 		resp.ErrorJSON(w, err, 500)
 		return
 	}
+
+	resp.WriteJSON(w, 200, "Секрет изменен")
+}
+
+//	 @Summary      Удалить ключ
+//		@Security ApiKeyAuth
+//	 @Description  Администратор может удалять любой ключ, а пользователь только свои.
+//	 @Tags         secrets
+//
+// @Accept       json
+// @Produce      json
+// @Success      200  {string}   "Секрет удален"
+// @Failure      400  {object}  resp.Err
+// @Failure      500  {object}  resp.Err
+// @Router       /api/v1/secrets/:secret_id [delete]
+func (s *Repo) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	role, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	if err := s.deleteById(secretId, role, userId); err != nil {
+		resp.ErrorJSON(w, err, 500)
+		return
+	}
+	resp.WriteJSON(w, 200, "Секрет удален")
 }

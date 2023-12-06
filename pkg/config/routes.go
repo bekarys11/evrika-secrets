@@ -58,6 +58,7 @@ func (app *Config) LoadRoutes() {
 	api.HandleFunc("/secrets", secretRepo.All).Methods("GET")
 	api.HandleFunc("/secrets/{secret_id}", secretRepo.One).Methods("GET")
 	api.HandleFunc("/secrets/{secret_id}", secretRepo.Update).Methods("PUT")
+	api.HandleFunc("/secrets/{secret_id}", secretRepo.Delete).Methods("DELETE")
 
 	api.HandleFunc("/secrets", secretRepo.Create).Methods("POST")
 	api.HandleFunc("/secrets/share", secretRepo.ShareSecret).Methods("POST")
