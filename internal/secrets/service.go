@@ -3,6 +3,7 @@ package secrets
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Masterminds/squirrel"
@@ -17,6 +18,87 @@ import (
 type Repo struct {
 	DB       *sqlx.DB
 	QBuilder squirrel.StatementBuilderType
+}
+
+func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secrets []*SecretResp, err error) {
+	log.Println(userId, userRole)
+	if userRole == "user" {
+		log.Println("[DEBUG] user role is true")
+		q := fmt.Sprintf(`
+				SELECT ss.id, ss.title, ss.users FROM (
+				    SELECT
+				        s.id, s.title,
+                      jsonb_agg(
+                              jsonb_build_object(
+                                      'id', u.id,
+                                      'name', u.name
+                                  )
+                          ) AS users
+                  FROM
+                      secrets s
+                          JOIN users_secrets us ON us.secret_id = s.id
+                          JOIN users u ON us.user_id = u.id
+                  GROUP BY s.id, s.title, s.key, s.data, s.stype, s.author_id, s.created_at, s.updated_at
+				) ss
+				WHERE jsonb_path_exists(users, '$[*] ? (@.id == %s)');
+`, userId)
+
+		rows, err := s.DB.Queryx(q)
+		log.Printf("[DEBUG] QUERY: %s", q)
+		if err != nil {
+			return nil, fmt.Errorf("secrets query error: %v", err)
+		}
+
+		for rows.Next() {
+			var secret SecretResp
+			if err := rows.Scan(
+				&secret.ID, &secret.Title,
+				&secret.Users,
+			); err != nil {
+				return nil, fmt.Errorf("scan error: %v", err)
+			}
+
+			//var secret SecretResp
+			//log.Println("Before scan")
+			//if err := rows.Scan(
+			//	&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt,
+			//	&secret.Users,
+			//); err != nil {
+			//	return nil, err
+			//}
+
+			log.Printf("USER PUSER: %s", secret.Users)
+			log.Println("After scan")
+
+			secrets = append(secrets, &secret)
+
+			// Unmarshal the bytes into a User struct
+			var user interface{}
+			err = json.Unmarshal(secret.Users.([]byte), &user)
+			if err != nil {
+				fmt.Println("Error unmarshaling JSON:", err)
+			}
+
+			secret.Users = user
+
+			log.Printf("[DEBUG] UNMARSHALING: %v", user)
+		}
+		defer rows.Close()
+
+		// Check if there are any rows
+		if !rows.Next() {
+			fmt.Println("No rows returned.")
+		}
+
+		// Reset the rows to the beginning for further processing
+		if err := rows.Err(); err != nil {
+			fmt.Println("Error checking rows:", err)
+		}
+
+		log.Println(secrets)
+	}
+
+	return secrets, nil
 }
 
 func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
@@ -193,3 +275,49 @@ func (s *Repo) checkForSecretAuthor(secretId, userRole, userId string) error {
 	}
 	return nil
 }
+
+var q = `
+SELECT * FROM (
+                  SELECT
+                      s.id,
+                      s.title,
+                      s.key,
+                      s.data, s.stype, s.author_id,
+                      jsonb_agg(
+                              jsonb_build_object(
+                                      'user_id', u.id,
+                                      'user_name', u.name
+                                  )
+                          ) AS users
+                  FROM
+                      secrets s
+                          JOIN users_secrets us ON us.secret_id = s.id
+                          JOIN users u ON us.user_id = u.id
+                  GROUP BY s.id, s.title, s.key, s.data, s.stype, s.author_id, s.created_at, s.updated_at
+              ) secrets_sub
+         WHERE jsonb_path_exists(users, '$[*] ? (@.user_id == 56)');
+`
+
+//q := fmt.Sprintf(`
+//	SELECT
+//    secrets_sub.id, secrets_sub.title, secrets_sub.key, secrets_sub.data, secrets_sub.stype, secrets_sub.author_id, secrets_sub.created_at, secrets_sub.updated_at, secrets_sub.users
+//	FROM (
+//                  SELECT
+//                      s.id,
+//                      s.title,
+//                      s.key,
+//                      s.data, s.stype, s.author_id, s.created_at, s.updated_at,
+//                      jsonb_agg(
+//                              jsonb_build_object(
+//                                      'id', u.id,
+//                                      'name', u.name
+//                                  )
+//                          ) AS users
+//                  FROM
+//                      secrets s
+//                          JOIN users_secrets us ON us.secret_id = s.id
+//                          JOIN users u ON us.user_id = u.id
+//                  GROUP BY s.id, s.title, s.key, s.data, s.stype, s.author_id, s.created_at, s.updated_at
+//              ) secrets_sub
+//         WHERE jsonb_path_exists(users, '$[*] ? (@.user_id == %s)');
+//`, userId)
