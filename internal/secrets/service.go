@@ -22,9 +22,10 @@ type Repo struct {
 
 func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secrets []*SecretResp, err error) {
 	var (
-		q          string
-		args       []interface{}
-		secretType = qParams.Get("type")
+		q              string
+		args           []interface{}
+		secretType     = qParams.Get("type")
+		userIDQuery, _ = strconv.Atoi(qParams.Get("user"))
 	)
 
 	gQuery := s.QBuilder.
@@ -52,18 +53,34 @@ func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secre
 			userQ = userQ.Where("ss.stype = ?", secretType)
 		}
 
+		if hasUserId := qParams.Has("user"); hasUserId {
+			return nil, errors.New("вы не имеете достаточно прав")
+		}
+
 		q, args, err = userQ.ToSql()
-		log.Printf("[DEBUG] query: %s; args: %v", q, args)
+		log.Printf("[DEBUG] user query: %s; args: %v", q, args)
 		if err != nil {
 			log.Printf("Error to_sql: %v", err)
 		}
 
-	} else {
+	}
+	if userRole == "admin" {
+		adminQ := s.QBuilder.
+			Select("ss.id", "ss.title", "ss.key", "ss.data", "ss.stype", "ss.author_id", "ss.users_info").
+			FromSelect(gQuery, "ss").
+			Where(fmt.Sprintf("jsonb_path_exists(users_info, '$[*] ?? (@.id == %s)')", userId))
+
 		if hasType := qParams.Has("type"); hasType {
-			gQuery = gQuery.Where("secrets.stype = ?", secretType)
+			adminQ = adminQ.Where("ss.stype = ?", secretType)
 		}
 
-		q, args, err = gQuery.ToSql()
+		if hasUserId := qParams.Has("user"); hasUserId {
+			log.Printf("has user query param: %d", userIDQuery)
+			adminQ = adminQ.Where(fmt.Sprintf("jsonb_path_exists(users_info, '$[*] ?? (@.id == %d)')", userIDQuery))
+		}
+
+		q, args, err = adminQ.ToSql()
+		log.Printf("[DEBUG] admin query: %s; args: %v", q, args)
 		if err != nil {
 			log.Printf("Error to_sql: %v", err)
 		}
