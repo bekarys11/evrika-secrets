@@ -115,46 +115,46 @@ func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secre
 	return secrets, nil
 }
 
-func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
-	secretType := qParams.Get("type")
-	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
-
-	query := s.QBuilder.
-		Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").
-		From("users_secrets").
-		Join("secrets ON users_secrets.secret_id = secrets.id")
-
-	// FILTERS
-	if userRole == "user" {
-		query = query.Where("users_secrets.user_id = ?", userId)
-	}
-	if hasType := qParams.Has("type"); hasType {
-		query = query.Where("secrets.stype = ?", secretType)
-	}
-	if userIDQuery != 0 {
-		if userRole != "admin" {
-			return nil, errors.New("вы не имеете достаточно прав")
-		}
-
-		// admin can see any user's secrets
-		query = query.Where("users_secrets.user_id = ?", userIDQuery)
-	}
-
-	rows, err := query.RunWith(s.DB).Query()
-	if err != nil {
-		return nil, fmt.Errorf("sql query error: %v", err)
-	}
-
-	for rows.Next() {
-		var secret Secret
-		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
-			return nil, err
-		}
-		secrets = append(secrets, &secret)
-	}
-
-	return secrets, nil
-}
+//func (s *Repo) getSecrets(qParams url.Values, userRole, userId string) (secrets []*Secret, err error) {
+//	secretType := qParams.Get("type")
+//	userIDQuery, _ := strconv.Atoi(qParams.Get("user"))
+//
+//	query := s.QBuilder.
+//		Select("secrets.id, secrets.title, secrets.key, secrets.data, secrets.stype, secrets.author_id, secrets.created_at, secrets.updated_at").
+//		From("users_secrets").
+//		Join("secrets ON users_secrets.secret_id = secrets.id")
+//
+//	// FILTERS
+//	if userRole == "user" {
+//		query = query.Where("users_secrets.user_id = ?", userId)
+//	}
+//	if hasType := qParams.Has("type"); hasType {
+//		query = query.Where("secrets.stype = ?", secretType)
+//	}
+//	if userIDQuery != 0 {
+//		if userRole != "admin" {
+//			return nil, errors.New("вы не имеете достаточно прав")
+//		}
+//
+//		// admin can see any user's secrets
+//		query = query.Where("users_secrets.user_id = ?", userIDQuery)
+//	}
+//
+//	rows, err := query.RunWith(s.DB).Query()
+//	if err != nil {
+//		return nil, fmt.Errorf("sql query error: %v", err)
+//	}
+//
+//	for rows.Next() {
+//		var secret Secret
+//		if err := rows.Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
+//			return nil, err
+//		}
+//		secrets = append(secrets, &secret)
+//	}
+//
+//	return secrets, nil
+//}
 
 func (s *Repo) getById(secretId string, userRole, userId string) (secret Secret, err error) {
 	userID, _ := strconv.Atoi(userId)

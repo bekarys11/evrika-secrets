@@ -79,3 +79,9 @@ func ErrorJSON(w http.ResponseWriter, err error, status ...int) {
 
 	WriteJSON(w, statusCode, payload)
 }
+
+func RespondOK(data any, w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(data)
+}

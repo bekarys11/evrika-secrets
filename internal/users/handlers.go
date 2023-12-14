@@ -13,7 +13,7 @@ import (
 	"net/http"
 )
 
-type Repo struct {
+type Re struct {
 	DB         *sqlx.DB
 	LDAP       *ldap.Conn
 	Validation *validator.Validate
@@ -29,7 +29,7 @@ type Repo struct {
 //	 @Failure      400  {object}  resp.Err
 //	 @Failure      500  {object}  resp.Err
 //	 @Router       /api/v1/users [get]
-func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
+func (u *Re) All(w http.ResponseWriter, r *http.Request) {
 	var users []*UserResp
 
 	rows, err := u.DB.Queryx(`SELECT * FROM users
@@ -75,7 +75,7 @@ func (u *Repo) All(w http.ResponseWriter, r *http.Request) {
 //	@Failure      400  {object}  resp.Err
 //	@Failure      500  {object}  resp.Err
 //	@Router       /api/v1/users [post]
-func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
+func (u *Re) Create(w http.ResponseWriter, r *http.Request) {
 	var user UserRequest
 
 	if err := resp.ReadJSON(w, r, &user); err != nil {
@@ -88,10 +88,10 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := u.ActiveDirSearch(user.Email); err != nil {
-		resp.ErrorJSON(w, err, http.StatusBadRequest)
-		return
-	}
+	//if _, err := u.ActiveDirSearch(user.Email); err != nil {
+	//	resp.ErrorJSON(w, err, http.StatusBadRequest)
+	//	return
+	//}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -117,7 +117,7 @@ func (u *Repo) Create(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  resp.Err
 // @Failure      500  {object}  resp.Err
 // @Router       /api/v1/profile [get]
-func (u *Repo) GetProfile(w http.ResponseWriter, r *http.Request) {
+func (u *Re) GetProfile(w http.ResponseWriter, r *http.Request) {
 	var (
 		user UserResp
 		role roles.Role

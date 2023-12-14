@@ -36,7 +36,11 @@ func (app *Config) LoadRoutes() {
 		log.Fatalf("Failed to create new enforcer: %v", err)
 	}
 
-	userRepo := &users.Repo{DB: app.DB, LDAP: app.LDAP, Validation: validate}
+	userRepository := users.NewRepository(app.DB, app.LDAP, validate)
+	userService := users.NewUserService(userRepository)
+	userServer := users.NewHttpServer(userService)
+
+	//userRepo := &users.Re{DB: app.DB, LDAP: app.LDAP, Validation: validate}
 	authRepo := &auth.Repo{DB: app.DB}
 	secretRepo := &secrets.Repo{DB: app.DB, QBuilder: psql}
 	roleRepo := &roles.Repo{DB: app.DB}
@@ -48,12 +52,9 @@ func (app *Config) LoadRoutes() {
 	api.Use(Authenticator())
 	api.Use(Authorizer(e))
 
-	api.HandleFunc("/users", userRepo.All).Methods("GET")
-
-	api.HandleFunc("/users", userRepo.All).Methods("GET")
-	api.HandleFunc("/users", userRepo.Create).Methods("POST")
-
-	api.HandleFunc("/profile", userRepo.GetProfile).Methods("GET")
+	api.HandleFunc("/users", userServer.GetUsers).Methods("GET")
+	api.HandleFunc("/users", userServer.CreateUser).Methods("POST")
+	api.HandleFunc("/profile", userServer.GetProfile).Methods("GET")
 
 	api.HandleFunc("/secrets", secretRepo.All).Methods("GET")
 	api.HandleFunc("/secrets/{secret_id}", secretRepo.One).Methods("GET")

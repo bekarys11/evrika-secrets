@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (u *Repo) ActiveDirSearch(email string) (*ldap.SearchResult, error) {
+func (repo *Repository) ActiveDirSearch(email string) (*ldap.SearchResult, error) {
 	filter := fmt.Sprintf("(mail=%s)", ldap.EscapeFilter(email))
 
 	searchReq := ldap.NewSearchRequest(
@@ -21,7 +21,7 @@ func (u *Repo) ActiveDirSearch(email string) (*ldap.SearchResult, error) {
 		nil,
 	)
 
-	result, err := u.LDAP.SearchWithPaging(searchReq, 1)
+	result, err := repo.LDAP.SearchWithPaging(searchReq, 1)
 	if err != nil {
 		return nil, fmt.Errorf("Ошибка поиска active directory: %s", err)
 	}
