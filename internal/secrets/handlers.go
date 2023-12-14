@@ -37,7 +37,7 @@ func (s *Repo) All(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secrets, err := s.getSecrets(qParams, userRole, userId)
+	secrets, err := s.getAllSecrets(qParams, userRole, userId)
 
 	if err != nil {
 		resp.ErrorJSON(w, err)
