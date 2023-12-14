@@ -21,43 +21,55 @@ type Repo struct {
 }
 
 func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secrets []*SecretResp, err error) {
-	var q string
-	if userRole == "user" {
-		q = fmt.Sprintf(`
-		SELECT ss.id, ss.title, ss.key, ss.data, ss.stype, ss.author_id, ss.users FROM (
-			SELECT
-			s.id, s.title, s.key, s.data, s.stype, s.author_id,
-			jsonb_agg(
+	var (
+		q          string
+		args       []interface{}
+		secretType = qParams.Get("type")
+	)
+
+	gQuery := s.QBuilder.
+		Select("secrets.id", "secrets.title", "secrets.key", "secrets.data", "secrets.stype", "secrets.author_id").
+		Column(`
+					jsonb_agg(
 					  jsonb_build_object(
-							  'id', u.id,
-							  'name', u.name
+							  'id', users.id,
+							  'name', users.name
 						  )
-					  ) AS users
-		  FROM secrets s
-		  JOIN users_secrets us ON us.secret_id = s.id
-		  JOIN users u ON us.user_id = u.id
-		  GROUP BY s.id, s.title, s.key, s.data, s.stype, s.author_id, s.created_at, s.updated_at
-		) ss
-		WHERE jsonb_path_exists(users, '$[*] ? (@.id == %s)');
-`, userId)
+					  ) AS users_info
+					`).
+		From("secrets").
+		Join("users_secrets ON users_secrets.secret_id = secrets.id").
+		Join("users ON users_secrets.user_id = users.id").
+		GroupBy("secrets.id", "secrets.title", "secrets.key", "secrets.data", "secrets.stype", "secrets.author_id")
+
+	if userRole == "user" {
+		userQ := s.QBuilder.
+			Select("ss.id", "ss.title", "ss.key", "ss.data", "ss.stype", "ss.author_id", "ss.users_info").
+			FromSelect(gQuery, "ss").
+			Where(fmt.Sprintf("jsonb_path_exists(users_info, '$[*] ?? (@.id == %s)')", userId))
+
+		if hasType := qParams.Has("type"); hasType {
+			userQ = userQ.Where("ss.stype = ?", secretType)
+		}
+
+		q, args, err = userQ.ToSql()
+		log.Printf("[DEBUG] query: %s; args: %v", q, args)
+		if err != nil {
+			log.Printf("Error to_sql: %v", err)
+		}
+
 	} else {
-		q = `
-		SELECT
-		s.id, s.title, s.key, s.data, s.stype, s.author_id,
-		jsonb_agg(
-				  jsonb_build_object(
-						  'id', u.id,
-						  'name', u.name
-					  )
-				  ) AS users
-	  FROM secrets s
-	  JOIN users_secrets us ON us.secret_id = s.id
-	  JOIN users u ON us.user_id = u.id
-	  GROUP BY s.id, s.title, s.key, s.data, s.stype, s.author_id, s.created_at, s.updated_at
-`
+		if hasType := qParams.Has("type"); hasType {
+			gQuery = gQuery.Where("secrets.stype = ?", secretType)
+		}
+
+		q, args, err = gQuery.ToSql()
+		if err != nil {
+			log.Printf("Error to_sql: %v", err)
+		}
 	}
 
-	rows, err := s.DB.Queryx(q)
+	rows, err := s.DB.Query(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("secrets query error: %v", err)
 	}
@@ -80,8 +92,6 @@ func (s *Repo) getAllSecrets(qParams url.Values, userRole, userId string) (secre
 		}
 
 		secret.Users = user
-
-		log.Printf("[DEBUG] UNMARSHALING: %v", user)
 	}
 	defer rows.Close()
 
