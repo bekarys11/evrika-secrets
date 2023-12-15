@@ -4,13 +4,11 @@ import (
 	"context"
 	"github.com/bekarys11/evrika-secrets/pkg/config"
 	_ "github.com/joho/godotenv/autoload"
-	"log"
 	"time"
 )
 
 func main() {
 	cfg := config.New()
-	log.Println("About to listen")
 
 	go cfg.Server.ListenAndServe()
 

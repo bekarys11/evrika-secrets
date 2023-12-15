@@ -41,9 +41,13 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	userService := users.NewUserService(userRepository)
 	userServer := users.NewHttpServer(userService)
 
+	roleRepository := roles.NewRepository(db)
+	roleService := roles.NewRoleService(roleRepository)
+	roleServer := roles.NewHttpServer(roleService)
+
 	authRepo := &auth.Repo{DB: db}
 	secretRepo := &secrets.Repo{DB: db, QBuilder: psql}
-	roleRepo := &roles.Repo{DB: db}
+	//roleRepo := &roles.Repo{DB: db}
 
 	router = mux.NewRouter()
 	router.HandleFunc("/api/v1/login", authRepo.Login)
@@ -64,7 +68,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	api.HandleFunc("/secrets", secretRepo.Create).Methods("POST")
 	api.HandleFunc("/secrets/share", secretRepo.ShareSecret).Methods("POST")
 
-	api.HandleFunc("/roles", roleRepo.All).Methods("GET")
+	api.HandleFunc("/roles", roleServer.GetRoles).Methods("GET")
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
