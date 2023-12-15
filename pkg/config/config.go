@@ -8,15 +8,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Config struct {
+	Server *http.Server
 	DB     *sqlx.DB
 	Router *mux.Router
 	LDAP   *ldap.Conn
 }
 
-func StartApp() {
+func StartApp() (*http.Server, *sqlx.DB) {
 	PORT := os.Getenv("APP_PORT")
 	app := Config{}
 
@@ -39,8 +41,16 @@ func StartApp() {
 	app.LoadRoutes()
 	handler := handleCORS(app.Router)
 
+	app.Server = &http.Server{
+		Addr:           PORT,
+		Handler:        handler,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
 	defer app.DB.Close()
 	defer app.LDAP.Close()
 
-	log.Fatal(http.ListenAndServe(PORT, handler))
+	return app.Server, app.DB
 }
