@@ -9,8 +9,10 @@ import (
 	"github.com/bekarys11/evrika-secrets/internal/users"
 	"github.com/bekarys11/evrika-secrets/pkg/auth"
 	"github.com/casbin/casbin/v2"
+	"github.com/go-ldap/ldap"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"log/slog"
@@ -27,28 +29,26 @@ import (
 // @securityDefinitions.apiKey  ApiKeyAuth
 // @in header
 // @name Authorization
-func (app *Config) LoadRoutes() {
+func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
 	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-
+	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
 	if err != nil {
 		log.Fatalf("Failed to create new enforcer: %v", err)
 	}
 
-	userRepository := users.NewRepository(app.DB, app.LDAP, validate)
+	userRepository := users.NewRepository(db, ldapConn, validate)
 	userService := users.NewUserService(userRepository)
 	userServer := users.NewHttpServer(userService)
 
-	//userRepo := &users.Re{DB: app.DB, LDAP: app.LDAP, Validation: validate}
-	authRepo := &auth.Repo{DB: app.DB}
-	secretRepo := &secrets.Repo{DB: app.DB, QBuilder: psql}
-	roleRepo := &roles.Repo{DB: app.DB}
+	authRepo := &auth.Repo{DB: db}
+	secretRepo := &secrets.Repo{DB: db, QBuilder: psql}
+	roleRepo := &roles.Repo{DB: db}
 
-	app.Router = mux.NewRouter()
-	app.Router.HandleFunc("/api/v1/login", authRepo.Login)
+	router = mux.NewRouter()
+	router.HandleFunc("/api/v1/login", authRepo.Login)
 
-	api := app.Router.PathPrefix("/api/v1").Subrouter()
+	api := router.PathPrefix("/api/v1").Subrouter()
 	api.Use(Authenticator())
 	api.Use(Authorizer(e))
 
@@ -66,7 +66,7 @@ func (app *Config) LoadRoutes() {
 
 	api.HandleFunc("/roles", roleRepo.All).Methods("GET")
 
-	app.Router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
-
+	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
+	return router
 }

@@ -58,6 +58,10 @@ func (repo *Repository) CreateUser(payload User) error {
 		return fmt.Errorf("validation error: %v", err)
 	}
 
+	if _, err := repo.activeDirSearch(payload.Email); err != nil {
+		return err
+	}
+
 	hashed, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return fmt.Errorf("password hashing error: %v", err.Error())

@@ -6,20 +6,21 @@ import (
 	"os"
 )
 
-func (app *Config) ConnectToLDAP() (err error) {
-	app.LDAP, err = ldap.DialURL(fmt.Sprintf("ldap://%s:389", os.Getenv("LDAP_HOST")))
+func connectToLDAP() (ldapConn *ldap.Conn, err error) {
+	ldapConn, err = ldap.DialURL(fmt.Sprintf("ldap://%s:389", os.Getenv("LDAP_HOST")))
 	if err != nil {
-		return fmt.Errorf("dial error to LDAP: %v", err)
+		return nil, fmt.Errorf("dial error to LDAP: %v", err)
 	}
 
-	if err = app.bind(); err != nil {
-		return err
+	if err = bind(ldapConn); err != nil {
+		return nil, err
 	}
-	return nil
+
+	return ldapConn, nil
 }
 
-func (app *Config) bind() error {
-	if err := app.LDAP.Bind(os.Getenv("LDAP_USERNAME"), os.Getenv("LDAP_PASSWORD")); err != nil {
+func bind(ldapConn *ldap.Conn) error {
+	if err := ldapConn.Bind(os.Getenv("LDAP_USERNAME"), os.Getenv("LDAP_PASSWORD")); err != nil {
 		return fmt.Errorf("ldap bind error: %s", err)
 	}
 	return nil

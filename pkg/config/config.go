@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	seed "github.com/bekarys11/evrika-secrets/cmd/seeder"
 	"github.com/go-ldap/ldap"
 	"github.com/gorilla/mux"
@@ -18,39 +19,43 @@ type Config struct {
 	LDAP   *ldap.Conn
 }
 
-func StartApp() (*http.Server, *sqlx.DB) {
+func New() *Config {
 	PORT := os.Getenv("APP_PORT")
-	app := Config{}
 
-	if err := app.ConnectToDB(); err != nil {
+	db, err := connectToDB()
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := seed.PopulateRoles(app.DB); err != nil {
+	if err := seed.PopulateRoles(db); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := seed.PopulateUsers(app.DB); err != nil {
+	if err := seed.PopulateUsers(db); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := app.ConnectToLDAP(); err != nil {
+	ldapConn, err := connectToLDAP()
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	app.LoadRoutes()
-	handler := handleCORS(app.Router)
+	router := loadRoutes(db, ldapConn)
+	handler := handleCORS(router)
 
-	app.Server = &http.Server{
-		Addr:           PORT,
-		Handler:        handler,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	server := &http.Server{
+		Handler:      handler,
+		Addr:         fmt.Sprintf("127.0.0.1:%s", PORT),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
-	defer app.DB.Close()
-	defer app.LDAP.Close()
+	app := &Config{
+		Server: server,
+		DB:     db,
+		Router: router,
+		LDAP:   ldapConn,
+	}
 
-	return app.Server, app.DB
+	return app
 }

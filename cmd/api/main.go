@@ -4,22 +4,23 @@ import (
 	"context"
 	"github.com/bekarys11/evrika-secrets/pkg/config"
 	_ "github.com/joho/godotenv/autoload"
+	"log"
 	"time"
 )
 
 func main() {
-	server, db := config.StartApp()
+	cfg := config.New()
+	log.Println("About to listen")
+
+	go cfg.Server.ListenAndServe()
 
 	wait := config.GracefulShutdown(context.Background(), 2*time.Second, map[string]config.Operation{
 		"database": func(ctx context.Context) error {
-			return db.Close()
+			return cfg.DB.Close()
 		},
 		"http-server": func(ctx context.Context) error {
-			return server.Shutdown(context.Background())
+			return cfg.Server.Shutdown(context.Background())
 		},
 	})
-
 	<-wait
-
-	server.ListenAndServe()
 }

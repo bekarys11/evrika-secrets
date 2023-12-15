@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (repo *Repository) ActiveDirSearch(email string) (*ldap.SearchResult, error) {
+func (repo *Repository) activeDirSearch(email string) (*ldap.SearchResult, error) {
 	filter := fmt.Sprintf("(mail=%s)", ldap.EscapeFilter(email))
 
 	searchReq := ldap.NewSearchRequest(
