@@ -45,9 +45,11 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	roleService := roles.NewRoleService(roleRepository)
 	roleServer := roles.NewHttpServer(roleService)
 
+	secretRepository := secrets.NewRepository(db, psql)
+	secretService := secrets.NewSecretService(secretRepository)
+	secretServer := secrets.NewHttpServer(secretService)
+
 	authRepo := &auth.Repo{DB: db}
-	secretRepo := &secrets.Repo{DB: db, QBuilder: psql}
-	//roleRepo := &roles.Repo{DB: db}
 
 	router = mux.NewRouter()
 	router.HandleFunc("/api/v1/login", authRepo.Login)
@@ -60,13 +62,13 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	api.HandleFunc("/users", userServer.CreateUser).Methods("POST")
 	api.HandleFunc("/profile", userServer.GetProfile).Methods("GET")
 
-	api.HandleFunc("/secrets", secretRepo.All).Methods("GET")
-	api.HandleFunc("/secrets/{secret_id}", secretRepo.One).Methods("GET")
-	api.HandleFunc("/secrets/{secret_id}", secretRepo.Update).Methods("PUT")
-	api.HandleFunc("/secrets/{secret_id}", secretRepo.Delete).Methods("DELETE")
+	api.HandleFunc("/secrets", secretServer.GetSecrets).Methods("GET")
+	api.HandleFunc("/secrets/{secret_id}", secretServer.GetSecretById).Methods("GET")
+	api.HandleFunc("/secrets/{secret_id}", secretServer.UpdateSecret).Methods("PUT")
+	api.HandleFunc("/secrets/{secret_id}", secretServer.Delete).Methods("DELETE")
 
-	api.HandleFunc("/secrets", secretRepo.Create).Methods("POST")
-	api.HandleFunc("/secrets/share", secretRepo.ShareSecret).Methods("POST")
+	api.HandleFunc("/secrets", secretServer.CreateSecret).Methods("POST")
+	api.HandleFunc("/secrets/share", secretServer.ShareSecret).Methods("POST")
 
 	api.HandleFunc("/roles", roleServer.GetRoles).Methods("GET")
 

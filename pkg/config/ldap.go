@@ -7,14 +7,14 @@ import (
 )
 
 func connectToLDAP() (ldapConn *ldap.Conn, err error) {
-	ldapConn, err = ldap.DialURL(fmt.Sprintf("ldap://%s:389", os.Getenv("LDAP_HOST")))
-	if err != nil {
-		return nil, fmt.Errorf("dial error to LDAP: %v", err)
-	}
-
-	if err = bind(ldapConn); err != nil {
-		return nil, err
-	}
+	//ldapConn, err = ldap.DialURL(fmt.Sprintf("ldap://%s:389", os.Getenv("LDAP_HOST")))
+	//if err != nil {
+	//	return nil, fmt.Errorf("dial error to LDAP: %v", err)
+	//}
+	//
+	//if err = bind(ldapConn); err != nil {
+	//	return nil, err
+	//}
 
 	return ldapConn, nil
 }
