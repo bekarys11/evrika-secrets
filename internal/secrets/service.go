@@ -10,6 +10,7 @@ type Repo interface {
 	GetSecretById(secretId string, role string, userId string) (secret SecretResp, err error)
 	CreateSecret(ctx context.Context, payload Secret) error
 	UpdateSecret(secretId, userRole, userId string, payload Secret) error
+	DeleteSecret(secretId, userRole, userId string) error
 }
 
 type SecretService struct {
@@ -36,4 +37,8 @@ func (s SecretService) CreateSecret(ctx context.Context, payload Secret) error {
 
 func (s SecretService) UpdateSecret(secretId, userRole, userId string, payload Secret) error {
 	return s.repository.UpdateSecret(secretId, userRole, userId, payload)
+}
+
+func (s SecretService) DeleteSecret(secretId, userRole, userId string) error {
+	return s.repository.DeleteSecret(secretId, userRole, userId)
 }

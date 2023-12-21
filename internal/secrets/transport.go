@@ -16,6 +16,7 @@ type Service interface {
 	GetSecretById(secretId string, role string, userId string) (secret SecretResp, err error)
 	CreateSecret(ctx context.Context, payload Secret) error
 	UpdateSecret(secretId, userRole, userId string, payload Secret) error
+	DeleteSecret(secretId, userRole, userId string) error
 }
 
 type HttpServer struct {
@@ -206,4 +207,26 @@ func (h HttpServer) UpdateSecret(w http.ResponseWriter, r *http.Request) {
 // @Failure      400  {object}  resp.Err
 // @Failure      500  {object}  resp.Err
 // @Router       /api/v1/secrets/:secret_id [delete]
-func (h HttpServer) Delete(w http.ResponseWriter, r *http.Request) {}
+func (h HttpServer) Delete(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	secretId := vars["secret_id"]
+
+	userId, err := common.GetUserIdFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	userRole, err := common.GetRoleFromToken(r)
+	if err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+	if err := h.service.DeleteSecret(secretId, userRole, userId); err != nil {
+		resp.ErrorJSON(w, err)
+		return
+	}
+
+	resp.WriteJSON(w, http.StatusOK, map[string]string{"message": "Секрет удален"})
+
+}

@@ -204,6 +204,28 @@ func (repo *Repository) UpdateSecret(secretId, userRole, userId string, payload 
 	return nil
 }
 
+func (repo *Repository) DeleteSecret(secretId, userRole, userId string) error {
+	if userRole == "user" {
+		authorId, err := repo.getSecretAuthor(secretId, userRole, userId)
+		if err != nil {
+			return err
+		}
+
+		if err := repo.checkSecretAuthor(authorId, userId); err != nil {
+			return err
+		}
+	}
+
+	query := repo.QBuilder.Delete("secrets").Where("id = ?", secretId)
+
+	_, err := query.RunWith(repo.DB).Exec()
+	if err != nil {
+		return fmt.Errorf("error executing delete query: %v", err)
+	}
+
+	return nil
+}
+
 func (repo *Repository) getSecretAuthor(secretId, userRole, userId string) (int, error) {
 	secret, err := repo.GetSecretById(secretId, userRole, userId)
 	if err != nil {
