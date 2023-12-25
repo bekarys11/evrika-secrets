@@ -49,10 +49,12 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	secretService := secrets.NewSecretService(secretRepository)
 	secretServer := secrets.NewHttpServer(secretService)
 
-	authRepo := &auth.Repo{DB: db}
+	authRepository := auth.NewRepository(db)
+	authService := auth.NewAuthService(authRepository)
+	authServer := auth.NewHttpServer(authService)
 
 	router = mux.NewRouter()
-	router.HandleFunc("/api/v1/login", authRepo.Login)
+	router.HandleFunc("/api/v1/login", authServer.Login)
 
 	api := router.PathPrefix("/api/v1").Subrouter()
 	api.Use(Authenticator())
