@@ -40,7 +40,7 @@ func (repo *Repository) Login(payload LoginPayload) (token string, err error) {
 	isValidPassword := checkPassword(userEntity.Password, payload.Password)
 
 	if isValidPassword {
-		token, err := generateToken(userEntity)
+		token, err := GenerateToken(userEntity)
 		if err != nil {
 			return "", fmt.Errorf("failed to generate token: %v", err)
 		}
@@ -64,7 +64,7 @@ func checkPassword(hashedPassword, providedPassword string) bool {
 	return true
 }
 
-func generateToken(user users.User) (string, error) {
+func GenerateToken(user users.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp":     time.Now().Add(48 * time.Hour).Unix(),
 		"user_id": user.ID,

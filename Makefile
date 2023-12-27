@@ -20,6 +20,9 @@ down:
 
 ## start: starts the server
 start:
+	@echo "Running test"
+	go test -count=1 ./test/...
+
 	@echo "Starting server"
 	go run cmd/api/main.go
 
