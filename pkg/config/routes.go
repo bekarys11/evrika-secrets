@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"log/slog"
@@ -76,5 +77,8 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
+
+	router.PathPrefix("/metrics").Handler(promhttp.Handler())
+
 	return router
 }
