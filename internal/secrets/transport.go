@@ -101,7 +101,7 @@ func (h HttpServer) GetSecretById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.WriteApiJSON(w, http.StatusOK, secret)
+	resp.WriteApiJSON(w, http.StatusOK, &secret)
 }
 
 //	 @Summary      Создать секрет/ключ
