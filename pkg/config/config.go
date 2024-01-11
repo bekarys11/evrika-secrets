@@ -4,7 +4,7 @@ import (
 	"fmt"
 	seed "github.com/bekarys11/evrika-secrets/cmd/seeder"
 	"github.com/go-ldap/ldap"
-	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
 	"github.com/jmoiron/sqlx"
 	"log"
 	"net/http"
@@ -15,12 +15,11 @@ import (
 type Config struct {
 	Server *http.Server
 	DB     *sqlx.DB
-	Router *mux.Router
 	LDAP   *ldap.Conn
 }
 
 func New() *Config {
-	PORT := os.Getenv("APP_PORT")
+	APP_FULL_URL := os.Getenv("APP_FULL_URL")
 
 	db, err := connectToDB()
 	if err != nil {
@@ -43,17 +42,18 @@ func New() *Config {
 	router := loadRoutes(db, ldapConn)
 	handler := handleCORS(router)
 
+	handler = handlers.LoggingHandler(os.Stdout, router)
+
 	server := &http.Server{
+		Addr:         fmt.Sprintf("%s", APP_FULL_URL),
 		Handler:      handler,
-		Addr:         fmt.Sprintf("127.0.0.1:%s", PORT),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  3 * time.Second,
+		WriteTimeout: 3 * time.Second,
 	}
 
 	app := &Config{
 		Server: server,
 		DB:     db,
-		Router: router,
 		LDAP:   ldapConn,
 	}
 

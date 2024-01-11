@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	resp "github.com/bekarys11/evrika-secrets/pkg/response"
+	"log/slog"
 	"net/http"
 )
 
@@ -33,6 +34,7 @@ func NewHttpServer(service Service) HttpServer {
 //	@Failure      500  {object}  resp.Err
 //	@Router       /api/v1/login [post]
 func (h HttpServer) Login(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Hello from Login")
 	var payload LoginPayload
 
 	//TODO: fix: if add error handling, returns error: "json illegal base64 data at input byte 4"

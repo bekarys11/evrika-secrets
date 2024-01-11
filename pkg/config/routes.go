@@ -13,9 +13,11 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 )
 
@@ -54,7 +56,13 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	authServer := auth.NewHttpServer(authService)
 
 	router = mux.NewRouter()
-	router.HandleFunc("/api/v1/login", authServer.Login)
+	router.HandleFunc("/api/v1/login", authServer.Login).Methods("POST")
+	router.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("i am healthy"))
+	}).Methods("GET")
+	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("http://%s/swagger/doc.json", os.Getenv("APP_FULL_URL"))))).Methods("GET")
+
+	router.PathPrefix("/metrics").Handler(promhttp.Handler())
 
 	api := router.PathPrefix("/api/v1").Subrouter()
 	api.Use(Authenticator())
@@ -74,10 +82,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 
 	api.HandleFunc("/roles", roleServer.GetRoles).Methods("GET")
 
-	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(httpSwagger.URL(fmt.Sprintf("%s%s/swagger/doc.json", os.Getenv("APP_URL"), os.Getenv("SWAGGER_PORT"))))).Methods("GET")
 	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
-
-	//router.PathPrefix("/metrics").Handler(promhttp.Handler())
 
 	return router
 }

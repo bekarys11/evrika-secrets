@@ -14,8 +14,6 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - 32781:5432
-    networks:
-      - base
 
   server:
     build: .
@@ -23,13 +21,9 @@ services:
       - 44044:8888
     environment:
       - APP_PORT=:8888
-
+    network_mode: host
     depends_on:
       - postgres
-    links:
-      - postgres
-    networks:
-      - base
 
   prometheus:
     image: prom/prometheus:latest
@@ -37,11 +31,6 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "19090:9090"
-
-# Networks to be created to facilitate communication between containers
-networks:
-  base:
-    driver: bridge
 
 volumes:
   postgres_data:
