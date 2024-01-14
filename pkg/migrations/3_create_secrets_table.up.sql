@@ -1,5 +1,9 @@
-DROP TYPE types CASCADE;
+DO $$ BEGIN
 CREATE TYPE types AS ENUM ('auth', 'env', 'ssh');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
     CREATE TABLE IF NOT EXISTS secrets (
     id SERIAL UNIQUE,
     title VARCHAR (100),
@@ -12,4 +16,7 @@ CREATE TYPE types AS ENUM ('auth', 'env', 'ssh');
     CONSTRAINT fk_author
 	FOREIGN KEY (author_id)
     REFERENCES users(id) ON DELETE NO ACTION ON UPDATE CASCADE
-)
+);
+
+COMMIT;
+

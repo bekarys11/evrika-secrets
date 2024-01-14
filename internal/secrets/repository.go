@@ -65,7 +65,6 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 		}
 
 		q, args, err = userQ.ToSql()
-		log.Printf("[DEBUG] user query: %s; args: %v", q, args)
 		if err != nil {
 			log.Printf("Error to_sql: %v", err)
 		}
@@ -85,18 +84,17 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 		}
 
 		q, args, err = adminQ.ToSql()
-		log.Printf("[DEBUG] admin query: %s; args: %v", q, args)
 		if err != nil {
 			log.Printf("Error to_sql: %v", err)
 		}
 	}
-
-	rows, err := repo.DB.Query(q, args...)
+	log.Println(q)
+	rows, err := repo.DB.Queryx(q, args...)
 	if err != nil {
 		return nil, fmt.Errorf("secrets query error: %v", err)
 	}
-
 	for rows.Next() {
+		log.Println("Inside rows")
 
 		var secret SecretResp
 		if err := rows.Scan(
@@ -105,6 +103,7 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 			return nil, fmt.Errorf("scan error: %v", err)
 		}
 
+		log.Printf("One secret: %v", secret)
 		secrets = append(secrets, &secret)
 
 		// Unmarshal the bytes into a User struct
@@ -114,10 +113,13 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 			fmt.Println("Error unmarshaling JSON:", err)
 		}
 
+		log.Printf("User: %v", user)
+
 		secret.Users = user
 	}
-	defer rows.Close()
+	log.Println("After rows")
 
+	defer rows.Close()
 	return secrets, nil
 }
 
