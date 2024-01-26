@@ -134,14 +134,17 @@ func (repo *Repository) GetSecretById(secretId string, role string, userId strin
 	if err := query.RunWith(repo.DB).QueryRow().Scan(&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.CreatedAt, &secret.UpdatedAt); err != nil {
 		switch err {
 		case sql.ErrNoRows:
+			repo.Logger.Error("secret not found", err)
 			return SecretResp{}, errors.New("секрет не найден")
 		default:
+			repo.Logger.Error("secret query failed", err)
 			return SecretResp{}, fmt.Errorf("sql query failed: %v", err)
 		}
 	}
 
-	log.Printf("[DEBUG] author_id: %d \n user role: %s \n secret_id: %s \n", secret.AuthorId, role, secretId)
+	repo.Logger.Debug("author_id: user role: secret_id ", secret.AuthorId, role, secretId)
 	if secret.AuthorId != userID && role != "admin" {
+		repo.Logger.Info("you dont have permission")
 		return SecretResp{}, errors.New("вы не имеете достаточно прав")
 	}
 
@@ -185,11 +188,13 @@ func (repo *Repository) UpdateSecret(secretId, userRole, userId string, payload 
 
 	authorId, err := repo.getSecretAuthor(secretId, userRole, userId)
 	if err != nil {
+		repo.Logger.Error("failed to get secret author", err)
 		return err
 	}
 
 	if userRole == "user" {
 		if err := repo.checkSecretAuthor(authorId, userId); err != nil {
+			repo.Logger.Error("failed to get secret author", err)
 			return err
 		}
 	}
@@ -208,6 +213,7 @@ func (repo *Repository) UpdateSecret(secretId, userRole, userId string, payload 
 
 	_, err = query.RunWith(repo.DB).Exec()
 	if err != nil {
+		repo.Logger.Error("failed to query", err)
 		return fmt.Errorf("error executing update query: %v", err)
 	}
 
@@ -218,10 +224,12 @@ func (repo *Repository) DeleteSecret(secretId, userRole, userId string) error {
 	if userRole == "user" {
 		authorId, err := repo.getSecretAuthor(secretId, userRole, userId)
 		if err != nil {
+			repo.Logger.Error("get secret author failed", err)
 			return err
 		}
 
 		if err := repo.checkSecretAuthor(authorId, userId); err != nil {
+			repo.Logger.Error("failed to get secret author", err)
 			return err
 		}
 	}
@@ -230,6 +238,7 @@ func (repo *Repository) DeleteSecret(secretId, userRole, userId string) error {
 
 	_, err := query.RunWith(repo.DB).Exec()
 	if err != nil {
+		repo.Logger.Error("failed to delete secret", err)
 		return fmt.Errorf("error executing delete query: %v", err)
 	}
 
@@ -239,6 +248,7 @@ func (repo *Repository) DeleteSecret(secretId, userRole, userId string) error {
 func (repo *Repository) getSecretAuthor(secretId, userRole, userId string) (int, error) {
 	secret, err := repo.GetSecretById(secretId, userRole, userId)
 	if err != nil {
+		repo.Logger.Error("get secret by id failed", err)
 		return 0, fmt.Errorf("error querying secret: %v", err)
 	}
 
@@ -247,8 +257,9 @@ func (repo *Repository) getSecretAuthor(secretId, userRole, userId string) (int,
 
 func (repo *Repository) checkSecretAuthor(authorId int, userId string) error {
 	userID, _ := strconv.Atoi(userId)
-	log.Printf("author id: %d, user id: %d", authorId, userID)
+	repo.Logger.Debug("author id, user id", authorId, userID)
 	if authorId != userID {
+		repo.Logger.Info("you dont have permission")
 		return errors.New("вы не имеете достаточно прав")
 	}
 	return nil
