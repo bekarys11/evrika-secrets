@@ -47,7 +47,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn, logger *slog.Logger) (router *
 	roleService := roles.NewRoleService(roleRepository)
 	roleServer := roles.NewHttpServer(roleService)
 
-	secretRepository := secrets.NewRepository(db, psql)
+	secretRepository := secrets.NewRepository(db, psql, logger)
 	secretService := secrets.NewSecretService(secretRepository)
 	secretServer := secrets.NewHttpServer(secretService)
 

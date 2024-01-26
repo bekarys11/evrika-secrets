@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"log"
+	"log/slog"
 	"net/url"
 	"strconv"
 	"time"
@@ -17,12 +18,14 @@ import (
 type Repository struct {
 	DB       *sqlx.DB
 	QBuilder squirrel.StatementBuilderType
+	Logger   *slog.Logger
 }
 
-func NewRepository(db *sqlx.DB, sq squirrel.StatementBuilderType) *Repository {
+func NewRepository(db *sqlx.DB, sq squirrel.StatementBuilderType, logger *slog.Logger) *Repository {
 	return &Repository{
 		DB:       db,
 		QBuilder: sq,
+		Logger:   logger,
 	}
 }
 
@@ -79,7 +82,7 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 		}
 
 		if hasUserId := qParams.Has("user"); hasUserId {
-			log.Printf("has user query param: %d", userIDQuery)
+			repo.Logger.Debug("has user id query param", userIDQuery)
 			adminQ = adminQ.Where(fmt.Sprintf("jsonb_path_exists(users_info, '$[*] ?? (@.id == %d)')", userIDQuery))
 		}
 
@@ -88,9 +91,10 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 			log.Printf("Error to_sql: %v", err)
 		}
 	}
-	log.Println(q)
+	repo.Logger.Debug("query string", q)
 	rows, err := repo.DB.Queryx(q, args...)
 	if err != nil {
+		repo.Logger.Debug("query failed", err)
 		return nil, fmt.Errorf("secrets query error: %v", err)
 	}
 	for rows.Next() {
@@ -100,24 +104,23 @@ func (repo *Repository) GetSecrets(qParams url.Values, userRole string, userId s
 		if err := rows.Scan(
 			&secret.ID, &secret.Title, &secret.Key, &secret.Data, &secret.Type, &secret.AuthorId, &secret.Users,
 		); err != nil {
+			repo.Logger.Error("secret scan failed", secret)
 			return nil, fmt.Errorf("scan error: %v", err)
 		}
 
-		log.Printf("One secret: %v", secret)
 		secrets = append(secrets, &secret)
 
 		// Unmarshal the bytes into a User struct
 		var user interface{}
 		err = json.Unmarshal(secret.Users.([]byte), &user)
 		if err != nil {
+			repo.Logger.Error("Error unmarshaling JSON", err)
 			fmt.Println("Error unmarshaling JSON:", err)
 		}
 
-		log.Printf("User: %v", user)
-
 		secret.Users = user
 	}
-	log.Println("After rows")
+	repo.Logger.Debug("secrets list", secrets)
 
 	defer rows.Close()
 	return secrets, nil
@@ -150,6 +153,7 @@ func (repo *Repository) CreateSecret(ctx context.Context, payload Secret) error 
 
 	tx, err := repo.DB.BeginTxx(ctx, nil)
 	if err != nil {
+		repo.Logger.Error("unable to begin transaction", err)
 		return fmt.Errorf("unable to begin transaction: %v", err)
 	}
 	defer tx.Rollback()
@@ -157,16 +161,20 @@ func (repo *Repository) CreateSecret(ctx context.Context, payload Secret) error 
 	err = tx.QueryRowxContext(ctx, `INSERT INTO secrets (title, key, data, stype, author_id) VALUES ($1, $2, $3, $4, $5) RETURNING id`, payload.Title, payload.Key, payload.Data, payload.Type, payload.AuthorId).Scan(&secretId)
 	switch {
 	case err == sql.ErrNoRows:
+		repo.Logger.Error("no secret with id", err)
 		return fmt.Errorf("no secret with id: %v", err)
 	case err != nil:
+		repo.Logger.Error("error insert secrets to db", err)
 		return fmt.Errorf("error insert secrets to db: %v", err)
 	}
 
 	if _, err = tx.ExecContext(ctx, `INSERT INTO users_secrets (user_id, secret_id) VALUES ($1, $2)`, payload.AuthorId, secretId); err != nil {
+		repo.Logger.Error("error insert users' secrets to db", err)
 		return fmt.Errorf("error insert users' secrets to db: %v", err)
 	}
 
 	if err = tx.Commit(); err != nil {
+		repo.Logger.Error("error committing db transaction", err)
 		return fmt.Errorf("error committing db transaction: %v", err)
 	}
 
