@@ -82,7 +82,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn, logger *slog.Logger) (router *
 
 	api.HandleFunc("/roles", roleServer.GetRoles).Methods("GET")
 
-	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
+	logger.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 
 	return router
 }

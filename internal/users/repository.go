@@ -59,14 +59,16 @@ func (repo *Repository) GetUsers() (users []*UserResp, err error) {
 
 func (repo *Repository) CreateUser(payload User) error {
 	if err := repo.Validation.Struct(payload); err != nil {
-		repo.Logger.Error("create user failed", err)
+		repo.Logger.Error("user body validation failed", err)
 		return fmt.Errorf("validation error: %v", err)
 	}
+	repo.Logger.Debug("user is valid")
 
 	if _, err := repo.activeDirSearch(payload.Email); err != nil {
 		repo.Logger.Error("search in active directory failed", err)
 		return err
 	}
+	repo.Logger.Debug("user is found in active directory")
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(payload.Password), bcrypt.DefaultCost)
 	if err != nil {

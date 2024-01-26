@@ -20,15 +20,20 @@ func (repo *Repository) activeDirSearch(email string) (*ldap.SearchResult, error
 		[]string{},
 		nil,
 	)
+	repo.Logger.Debug("search request", searchReq)
 
 	result, err := repo.LDAP.SearchWithPaging(searchReq, 1)
 	if err != nil {
+		repo.Logger.Error("Ошибка поиска active directory", err)
 		return nil, fmt.Errorf("Ошибка поиска active directory: %s", err)
 	}
+	repo.Logger.Debug("active directory search result", result)
 
 	if len(result.Entries) > 0 {
+		repo.Logger.Debug("result entries", result.Entries)
 		return result, nil
 	} else {
+		repo.Logger.Error("no result")
 		return nil, fmt.Errorf("Нет результатов")
 	}
 }
