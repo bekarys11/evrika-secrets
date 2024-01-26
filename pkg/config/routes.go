@@ -31,7 +31,7 @@ import (
 // @securityDefinitions.apiKey  ApiKeyAuth
 // @in header
 // @name Authorization
-func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
+func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn, logger *slog.Logger) (router *mux.Router) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
@@ -39,7 +39,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 		log.Fatalf("Failed to create new enforcer: %v", err)
 	}
 
-	userRepository := users.NewRepository(db, ldapConn, validate)
+	userRepository := users.NewRepository(db, ldapConn, validate, logger)
 	userService := users.NewUserService(userRepository)
 	userServer := users.NewHttpServer(userService)
 
@@ -47,7 +47,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 	roleService := roles.NewRoleService(roleRepository)
 	roleServer := roles.NewHttpServer(roleService)
 
-	secretRepository := secrets.NewRepository(db, psql)
+	secretRepository := secrets.NewRepository(db, psql, logger)
 	secretService := secrets.NewSecretService(secretRepository)
 	secretServer := secrets.NewHttpServer(secretService)
 
@@ -82,7 +82,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 
 	api.HandleFunc("/roles", roleServer.GetRoles).Methods("GET")
 
-	slog.Info("app running on PORT:" + os.Getenv("APP_PORT"))
+	logger.Info("app running on PORT:" + os.Getenv("APP_PORT"))
 
 	return router
 }

@@ -39,7 +39,8 @@ func New() *Config {
 		log.Fatal(err)
 	}
 
-	router := loadRoutes(db, ldapConn)
+	logger := newLogger()
+	router := loadRoutes(db, ldapConn, logger)
 	handler := handleCORS(router)
 
 	handler = handlers.LoggingHandler(os.Stdout, router)
