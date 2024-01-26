@@ -23,6 +23,7 @@ require (
 )
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/casbin/govaluate v1.1.0 // indirect
@@ -47,6 +48,7 @@ require (
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
+	github.com/zhashkevych/go-sqlxmock v1.5.2-0.20201023121933-f973d0041cfc // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

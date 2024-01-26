@@ -31,7 +31,7 @@ import (
 // @securityDefinitions.apiKey  ApiKeyAuth
 // @in header
 // @name Authorization
-func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
+func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn, logger *slog.Logger) (router *mux.Router) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	psql := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 	e, err := casbin.NewEnforcer("auth_model.conf", "policy.csv")
@@ -39,7 +39,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn) (router *mux.Router) {
 		log.Fatalf("Failed to create new enforcer: %v", err)
 	}
 
-	userRepository := users.NewRepository(db, ldapConn, validate)
+	userRepository := users.NewRepository(db, ldapConn, validate, logger)
 	userService := users.NewUserService(userRepository)
 	userServer := users.NewHttpServer(userService)
 

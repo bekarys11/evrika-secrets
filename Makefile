@@ -2,8 +2,8 @@ dev:
 	@echo "Stopping docker images (if running...)"
 	docker compose down
 	@echo "Building (when required) and starting docker images..."
-	docker compose --file docker-compose.dev.yml up --build -d
-	@echo "Docker images built and started!"
+	docker compose --file docker-compose.dev.yml up --build
+
 
 
 ## up: starts all containers in the background without forcing build
@@ -13,6 +13,7 @@ up:
 	@echo "Starting Docker images..."
 	docker compose up -d
 	@echo "Docker images started!"
+	make test
 
 ## up_build: stops docker compose (if running), builds all projects and starts docker compose
 up_build:
@@ -40,3 +41,7 @@ swagger:
 	@echo "Generating swagger documentation"
 	swag init -g pkg/config/routes.go
 	@echo "Swagger documentation is available at: http://localhost:8888/swagger/index.html"
+
+test:
+	@echo "Running test"
+	go test ./test/...
