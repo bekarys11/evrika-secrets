@@ -30,12 +30,12 @@ services:
     depends_on:
       - postgres
 
-#  prometheus:
-#    image: prom/prometheus:latest
-#    volumes:
-#      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-#    ports:
-#      - "19090:9090"
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "19090:9090"
 
 volumes:
   postgres_data:
