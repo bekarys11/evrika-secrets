@@ -43,7 +43,7 @@ func loadRoutes(db *sqlx.DB, ldapConn *ldap.Conn, logger *slog.Logger) (router *
 	userService := users.NewUserService(userRepository)
 	userServer := users.NewHttpServer(userService)
 
-	roleRepository := roles.NewRepository(db)
+	roleRepository := roles.NewRepository(db, logger)
 	roleService := roles.NewRoleService(roleRepository)
 	roleServer := roles.NewHttpServer(roleService)
 
